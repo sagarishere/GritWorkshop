@@ -1,10 +1,13 @@
 import pygame as pg
 import math
-class GameObject:
+from SubjectInterface import SubjectInterface
+
+class GameObject(SubjectInterface):
     def __init__(self, x, y, sprite):
         self.x = x
         self.y = y
         self.sprite = sprite
+        self._observers = []  # Initialize the observer list
 
 
 
@@ -30,4 +33,5 @@ class GameObject:
         poi = mask.overlap(car_mask, offset)
         return poi
 
-    
+    def delete_self(self):
+        self.notify_remove_gameobject()

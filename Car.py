@@ -28,8 +28,6 @@ class Car(GameObject):
             self.move_forward()
         elif keys[pygame.K_s]:  # Brake functionality
             self.brake()
-        elif keys[pygame.K_SPACE]:  # Handbrake functionality
-            self.handbrake_turn()
         else:
             self.reduce_speed()
 
@@ -61,39 +59,6 @@ class Car(GameObject):
         # Decelerate faster than reduce_speed. Adjust the value as per requirements.
         deceleration_rate = self.acceleration * 3
         self.vel = max(self.vel - deceleration_rate, 0)
-        self.move()
-
-
-    def bounce(self):
-        self.vel = -self.vel
-        self.move()
-
-    def handbrake_turn(self):
-        # Decelerate but not as quickly as a full brake
-        deceleration_rate = self.acceleration * 2
-        self.vel = max(self.vel - deceleration_rate, 0)
-
-        # Determine the target angle based on current movement direction
-        target_angle = self.angle + 180
-        target_angle = (target_angle + 360) % 360  # Make sure the angle is between 0 and 360
-
-        # Compute the difference between current angle and target angle
-        angle_diff = target_angle - self.angle
-
-        # Determine the shortest rotation direction to the target angle
-        if angle_diff > 180:
-            angle_diff -= 360
-        elif angle_diff < -180:
-            angle_diff += 360
-
-        # Rotate the car towards the target angle based on a turning rate
-        turn_rate = 5  # Adjust this value based on your game's requirements
-        rotation_direction = 1 if angle_diff > 0 else -1
-
-        self.angle += rotation_direction * min(abs(angle_diff), turn_rate)
-        self.angle = self.angle % 360  # Ensure the angle remains between 0 and 360
-
-        # Continue to move even when turning
         self.move()
 
     def reduce_speed(self):
