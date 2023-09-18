@@ -1,29 +1,25 @@
 import pygame
 from pygame.locals import *
-import Renderer
+from Renderer import Renderer
 from Sprite import Sprite
 from Car import Car
 from Track import Track
 from FinishLine import FinishLine
 from Wall import Wall
 from GameObject import GameObject
-
 import MapArchive
 
 class Game:
-
     def __init__(self):
         # Setting up the renderer
         width = 1536
         height = 768
-        self.renderer = Renderer.Renderer(width, height)
+        self.renderer = Renderer(width, height)
         self.clock = pygame.time.Clock()
         self.running = True
 
-
         self.TICK_RATE = 30
         self.race_lenght = -1
-        # Create an array of active game objects
         self.active_gameobjects = []
 
         track_map = MapArchive.map_one()
@@ -32,11 +28,7 @@ class Game:
 
         self.finish_line = self.get_finish_line()
 
-
-        # Creating game objects with sprites
-
         self.test_sprite = Sprite("assets/track2.jpg")
-
         car1_sprite = Sprite("assets/car1.png")
         self.car1 = Car(self.finish_line.x  , self.finish_line.y, car1_sprite, max_vel=20, rotation_vel=5, angle=270)
     
@@ -44,7 +36,18 @@ class Game:
         self.race_progress = [{self.car1: 0}]  # starting from sequence 0 for the car
         self.timer = 0  # timer in seconds
 
+
+        text1 = self.renderer.TextObject(font_size=24, font_color=(255, 0, 0), pos=(50, 50))
+        text2 = self.renderer.TextObject(font_size=24, font_color=(0, 255, 0), pos=(50, 100))
+
+        text1.update_text("This is a sample text", self.renderer.width, self.renderer.height)
+       # text2.update_text("00:05:42")
+
+        # Add them to the renderer's text objects list
+        self.renderer.text_objects.extend([text1, text2])
+
         print("Init done..")
+
 
     def run(self):
 
@@ -54,6 +57,7 @@ class Game:
 
             self.update()
             self.renderer.RenderAllObjects(self.active_gameobjects)
+            self.renderer.RenderAllTextObjects()
             self.check_collisions()
             self.clock.tick(self.TICK_RATE)  # Limit to 30 FPS
 
@@ -63,8 +67,6 @@ class Game:
                 self.running = False
 
     def update(self):
-
-
         #Add a check for the win condtion
         for game_object in self.active_gameobjects:
             if type(game_object) == Car:
@@ -75,13 +77,11 @@ class Game:
         print("Game Over! Total time taken:", self.timer, "seconds")
         pass
     
-
     def get_finish_line(self):
         for obj in self.active_gameobjects:
             if isinstance(obj, FinishLine):  # Assuming you have a FinishLine class for the finish line segment
                 return obj
         return None  # Return None if no FinishLine object is found
-
 
     def generate_track(self,track_map, map_spacing):
         game_objects = []
@@ -107,7 +107,6 @@ class Game:
 
         return game_objects
     
-
     def check_collisions(self):
         car = self.car1
         for obj in self.active_gameobjects:
@@ -132,7 +131,6 @@ class Game:
                     current_progress = self.race_progress[0][car]  # Retrieve the last sequence number the car collided with
                     if current_progress == self.race_lenght:
                         self.game_over()
-
 
     def generate_track_sequence(self, track_map, active_gameobjects):
         # Helper function to get the next track segment
