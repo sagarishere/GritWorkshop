@@ -43,12 +43,15 @@ class Renderer:
         for obj in game_objects:
             obj.draw(self.screen)
 
-
-
+    def RenderAllButtons(self, buttons):
+        """Draw all buttons."""
+        for button in buttons:
+            button.draw(self.screen)
+        pygame.display.flip()
+        
     def RenderAllTextObjects(self):
         """Draw all text objects."""
         for text_obj in self.text_objects:
             text_obj.draw(self.screen)
 
         # Update the display
-        pygame.display.flip()

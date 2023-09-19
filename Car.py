@@ -4,7 +4,7 @@ import math
 
 class Car(GameObject):
 
-    def __init__(self, x, y, sprite, max_vel, rotation_vel, angle):
+    def __init__(self, x, y, sprite, max_vel, rotation_vel, angle, AI_CONTROLLED=False):
         super().__init__(x, y, sprite)
         self.angle = angle
         self.rect = sprite.image.get_rect(topleft=(x, y))
@@ -15,18 +15,40 @@ class Car(GameObject):
         self.x, self.y = x, y
         self.acceleration = 0.1
         self.prev_x, self.prev_y = x, y  # Store the previous x and y positions
+        self.AI_CONTROLLED = AI_CONTROLLED
+        self.input_threshold = 0.5  # You can adjust this threshold as per your needs
 
+    def get_input(self):
+        if self.AI_CONTROLLED:
+            ai_output = self.ai_agent.GET_AI_OUTPUT()  # Fetching AI's outputs
+            return {
+                'left': ai_output[0] > self.input_threshold,
+                'right': ai_output[1] > self.input_threshold,
+                'forward': ai_output[2] > self.input_threshold,
+                'brake': ai_output[3] > self.input_threshold
+            }
+        else:
+            keys = pygame.key.get_pressed()
+            return {
+                'left': keys[pygame.K_a],
+                'right': keys[pygame.K_d],
+                'forward': keys[pygame.K_w],
+                'brake': keys[pygame.K_s]
+            }
+        
+    def set_ai_agent_controller(self, agent):
+        self.ai_agent = agent
 
     def handle_input(self):
-        keys = pygame.key.get_pressed()
+        input_data = self.get_input()
 
-        if keys[pygame.K_a]:
+        if input_data['left']:
             self.rotate(left=True)
-        if keys[pygame.K_d]:
+        if input_data['right']:
             self.rotate(right=True)
-        if keys[pygame.K_w]:
+        if input_data['forward']:
             self.move_forward()
-        elif keys[pygame.K_s]:  # Brake functionality
+        elif input_data['brake']:  # Brake functionality
             self.brake()
         else:
             self.reduce_speed()
@@ -36,6 +58,7 @@ class Car(GameObject):
             self.angle += self.rotation_vel
         elif right:
             self.angle -= self.rotation_vel
+
 
     def update(self):
         self.prev_x, self.prev_y = self.x, self.y  # Store the previous x and y before updating them
@@ -74,18 +97,5 @@ class Car(GameObject):
         WIDTH = 1536
         HEIGHT = 768
         
-        # Check for left boundary
-        if self.x < 0:
-            self.x = 0
-
-        # Check for right boundary
-        if self.x + self.rect.width > WIDTH:
-            self.x = WIDTH - self.rect.width
-
-        # Check for top boundary
-        if self.y < 0:
-            self.y = 0
-
-        # Check for bottom boundary
-        if self.y + self.rect.height > HEIGHT:
-            self.y = HEIGHT - self.rect.height
+        self.x = min(max(self.x, 0), WIDTH - self.rect.width)
+        self.y = min(max(self.y, 0), HEIGHT - self.rect.height)

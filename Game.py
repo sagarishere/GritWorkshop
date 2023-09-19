@@ -10,9 +10,12 @@ from GameObject import GameObject
 import MapArchive
 import math
 from TemporaryObj import TemporaryObj
+from AI_AGENT import AI_AGENT
+from Button import Button
 
 
 class Game:
+
     def __init__(self):
         # Setting up the renderer
         width = 1536
@@ -21,13 +24,19 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        self.TICK_RATE = 30
-        self.race_lenght = -1
+
         self.static_gameobjects = []
         self.dynamic_gameobjects = []
         self.car_indices = []
+        self.race_progress = []  # starting from sequence 0 for the car
+        self.objects_to_remove = []
 
         self.car_explosion_velocity = 0.05 # This is a percentage value
+        self.TICK_RATE = 30
+        self.race_lenght = -1
+        self.render_skip_count = 10
+        self.current_skip = 0
+        self.game_state = "NORMAL"
 
         track_map = MapArchive.map_one()
         self.static_gameobjects.extend(self.generate_track(track_map, 96))
@@ -38,20 +47,23 @@ class Game:
         self.register_gameobject(self.finish_line)
 
         self.test_sprite = Sprite("assets/track2.jpg")
-        car1_sprite = Sprite("assets/car1.png")
-        self.car1 = Car(self.finish_line.x, self.finish_line.y, car1_sprite, max_vel=20, rotation_vel=5, angle=270)
-        self.register_gameobject(self.car1)
-    
-        self.dynamic_gameobjects.append(self.car1)
-        self.car_indices.append(len(self.dynamic_gameobjects) - 1)
-        self.race_progress = [{self.car1: 0}]  # starting from sequence 0 for the car
         self.timer = 0  # timer in seconds
+
+            # Generate AI controlled cars
+        num_ai_cars = 30  # or any number you want
+        self.spawn_ai_cars(num_ai_cars)
+
 
 
         self.race_progress_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 50))
         self.timer_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 75))
-
         self.renderer.text_objects.extend([self.race_progress_text, self.timer_text])
+        self.fps_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 100))
+        self.renderer.text_objects.extend([self.fps_text])
+
+        self.simulate_button = Button(100, 10, 100, 40, "SIMULATE", self.simulate)
+        self.normal_button = Button(220, 10, 100, 40, "NORMAL", self.normal)
+        self.buttons = [self.simulate_button, self.normal_button]
 
         print("Init done..")
 
@@ -60,43 +72,92 @@ class Game:
 
     def run(self):
         while self.running:
-            self.timer += 1 / self.TICK_RATE
+            # Calculate the elapsed time based on the current FPS
+            current_fps = self.clock.get_fps()
+            elapsed_time = 1 / max(current_fps, 1)  # Avoid division by zero
+            
+            # Update the timer with the elapsed time
+            self.timer += elapsed_time
+            
             self.handle_events()
             self.update()
-            self.renderer.RenderAllObjects(self.static_gameobjects + self.dynamic_gameobjects)
-            self.renderer.RenderAllTextObjects()
-            self.check_collisions()
-            self.clock.tick(self.TICK_RATE)  # Limit to 30 FPS
+            
+            if self.game_state == "SIMULATE":
+                # Only render every fifth frame in SIMULATE state
+                self.current_skip += 1
+                if self.current_skip >= self.render_skip_count:
+                    self.render_game(current_fps)
+                    self.current_skip = 0  # Reset counter
+            else:
+                # In other states, always render
+                self.render_game(current_fps)
 
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
+            self.check_collisions()
+            self.clock.tick(self.TICK_RATE)
+
+    def render_game(self, current_fps):
+        # Calculate and display the FPS
+        self.fps_text.update_text(f"FPS: {current_fps:.2f}", self.renderer.width, self.renderer.height)
+        
+        self.renderer.RenderAllObjects(self.static_gameobjects + self.dynamic_gameobjects)
+        self.renderer.RenderAllTextObjects()
+        self.renderer.RenderAllButtons(self.buttons)
+
+    def simulate(self):
+        self.TICK_RATE = 999999
+        self.game_state = "SIMULATE"
+
+    def normal(self):
+        self.TICK_RATE = 30  # or whatever your initial tick rate was
+        self.game_state = "NORMAL"
+
 
     def update(self):
-
         if len(self.car_indices) == 0:
             self.game_over()
 
         for x in range(len(self.dynamic_gameobjects)):
             self.dynamic_gameobjects[x].update()
 
-        # for idx in self.car_indices:
-        #     car = self.dynamic_gameobjects[idx]
-        #     car.update()
-        
-        time = '%.3f'%(self.timer)
-        try:
-            car1 = self.dynamic_gameobjects[self.car_indices[0]]
-            self.race_progress_text.update_text("Race Progress:" + str(self.race_progress[0][car1]), self.renderer.width, self.renderer.height)
-            self.timer_text.update_text("Timer: " + str(time), self.renderer.width, self.renderer.height)
-        except:
-            pass
+        self.cleanup_destroyed_objects()
+        formatted_timer  = '%.3f'%(self.timer)
+
+        #self.race_progress_text.update_text("Race Progress:" + str(self.race_progress[0][car1]), self.renderer.width, self.renderer.height)
+        self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
+
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            self.simulate_button.handle_event(event)
+            self.normal_button.handle_event(event)
+
+
+
+
+
 
     def game_over(self):
         print("Game Over! Total time taken:", self.timer, "seconds")
         pass
     
+    def mark_for_removal(self, game_object):
+        """Mark a game object for removal."""
+        if game_object not in self.objects_to_remove:
+            self.objects_to_remove.append(game_object)
+
+    def spawn_ai_cars(self, num_cars):
+        car_sprite = Sprite("assets/car1.png")
+        for _ in range(num_cars):
+            ai_car = Car(self.finish_line.x, self.finish_line.y, car_sprite, max_vel=20, rotation_vel=5, angle=270, AI_CONTROLLED=True)
+            ai_car.set_ai_agent_controller(AI_AGENT())
+
+            self.register_gameobject(ai_car)
+            self.dynamic_gameobjects.append(ai_car)
+            self.car_indices.append(len(self.dynamic_gameobjects) - 1)
+            self.race_progress.append({ai_car: 0})  # starting from sequence 0 for each car
+
     def get_finish_line(self):
         # This function should now loop over static_gameobjects
         for obj in self.static_gameobjects:
@@ -173,7 +234,6 @@ class Game:
                         except:
                             pass
 
-
     def generate_track_sequence(self, track_map, active_gameobjects):
         # Helper function to get the next track segment
         def get_next_segment(x, y, visited):
@@ -218,10 +278,14 @@ class Game:
         next_x, next_y = get_next_segment(start_x, start_y, visited)
         dfs(next_x, next_y, 0)
 
-
     def register_gameobject(self, gameobject):
         """Register the game as an observer for the game object."""
         gameobject.register_observer(self)
+
+    def cleanup_destroyed_objects(self):
+        for obj in self.objects_to_remove:
+            self.remove_gameobject(obj)
+        self.objects_to_remove = []
 
     def remove_gameobject(self, gameobject):
         # Update this function to remove from dynamic_gameobjects
@@ -236,11 +300,10 @@ class Game:
                         if self.car_indices[i] > index:
                             self.car_indices[i] -= 1
 
-
     def create_explosion(self, x, y):
         # Added explosion to dynamic_gameobjects
         explosion_sprite = Sprite("assets/explosion.png")
-        obj = TemporaryObj(x, y, explosion_sprite, 1)
+        obj = TemporaryObj(x, y, explosion_sprite, 1, mark_for_removal_callback=self.mark_for_removal)
         self.dynamic_gameobjects.append(obj)
         self.register_gameobject(obj)
 
