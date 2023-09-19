@@ -14,5 +14,4 @@ class TemporaryObj(GameObject):
         self.last_update_time = current_time
         print(self.time_to_live)
         if self.time_to_live <= 0:
-            print("DELETING SELF")
             self.delete_self()

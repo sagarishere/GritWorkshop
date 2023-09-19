@@ -4,10 +4,10 @@ from SubjectInterface import SubjectInterface
 
 class GameObject(SubjectInterface):
     def __init__(self, x, y, sprite):
+        super().__init__()  # Initialize SubjectInterface
         self.x = x
         self.y = y
         self.sprite = sprite
-        self._observers = []  # Initialize the observer list
 
 
 
@@ -34,4 +34,5 @@ class GameObject(SubjectInterface):
         return poi
 
     def delete_self(self):
+        print("Remove 2")
         self.notify_remove_gameobject()

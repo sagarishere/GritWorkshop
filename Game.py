@@ -23,14 +23,17 @@ class Game:
 
         self.TICK_RATE = 30
         self.race_lenght = -1
-        self.active_gameobjects = []
+        self.static_gameobjects = []
+        self.dynamic_gameobjects = []
         self.car_indices = []
+
         self.car_explosion_velocity = 0.05 # This is a percentage value
 
         track_map = MapArchive.map_one()
-        self.active_gameobjects.extend(self.generate_track(track_map,96))
-        self.generate_track_sequence(track_map, self.active_gameobjects)
+        self.static_gameobjects.extend(self.generate_track(track_map, 96))
+        self.generate_track_sequence(track_map, self.static_gameobjects)
 
+        # Finish line addition
         self.finish_line = self.get_finish_line()
         self.register_gameobject(self.finish_line)
 
@@ -39,8 +42,8 @@ class Game:
         self.car1 = Car(self.finish_line.x, self.finish_line.y, car1_sprite, max_vel=20, rotation_vel=5, angle=270)
         self.register_gameobject(self.car1)
     
-        self.active_gameobjects.append(self.car1)
-        self.car_indices.append(len(self.active_gameobjects) - 1)
+        self.dynamic_gameobjects.append(self.car1)
+        self.car_indices.append(len(self.dynamic_gameobjects) - 1)
         self.race_progress = [{self.car1: 0}]  # starting from sequence 0 for the car
         self.timer = 0  # timer in seconds
 
@@ -60,7 +63,7 @@ class Game:
             self.timer += 1 / self.TICK_RATE
             self.handle_events()
             self.update()
-            self.renderer.RenderAllObjects(self.active_gameobjects)
+            self.renderer.RenderAllObjects(self.static_gameobjects + self.dynamic_gameobjects)
             self.renderer.RenderAllTextObjects()
             self.check_collisions()
             self.clock.tick(self.TICK_RATE)  # Limit to 30 FPS
@@ -75,13 +78,16 @@ class Game:
         if len(self.car_indices) == 0:
             self.game_over()
 
-        for idx in self.car_indices:
-            car = self.active_gameobjects[idx]
-            car.update()
+        for x in range(len(self.dynamic_gameobjects)):
+            self.dynamic_gameobjects[x].update()
+
+        # for idx in self.car_indices:
+        #     car = self.dynamic_gameobjects[idx]
+        #     car.update()
         
         time = '%.3f'%(self.timer)
         try:
-            car1 = self.active_gameobjects[self.car_indices[0]]
+            car1 = self.dynamic_gameobjects[self.car_indices[0]]
             self.race_progress_text.update_text("Race Progress:" + str(self.race_progress[0][car1]), self.renderer.width, self.renderer.height)
             self.timer_text.update_text("Timer: " + str(time), self.renderer.width, self.renderer.height)
         except:
@@ -92,10 +98,11 @@ class Game:
         pass
     
     def get_finish_line(self):
-        for obj in self.active_gameobjects:
-            if isinstance(obj, FinishLine):  # Assuming you have a FinishLine class for the finish line segment
+        # This function should now loop over static_gameobjects
+        for obj in self.static_gameobjects:
+            if isinstance(obj, FinishLine):
                 return obj
-        return None  # Return None if no FinishLine object is found
+        return None
 
     def generate_track(self,track_map, map_spacing):
         game_objects = []
@@ -122,10 +129,11 @@ class Game:
         return game_objects
     
     def check_collisions(self):
-        for idx in self.car_indices:  # Looping over all car indices to handle multiple cars
-            car = self.active_gameobjects[idx]
+        # Change this to handle dynamic objects colliding with static objects
+        for idx in self.car_indices:
+            car = self.dynamic_gameobjects[idx]
 
-            for obj in self.active_gameobjects:
+            for obj in self.static_gameobjects:
                 if isinstance(obj, Wall):
                     if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
                         dx = car.rect.centerx - obj.sprite.get_rect().centerx
@@ -216,28 +224,25 @@ class Game:
         gameobject.register_observer(self)
 
     def remove_gameobject(self, gameobject):
-        # Remove the game object from the active_gameobjects list
-        if gameobject in self.active_gameobjects:
-            index = self.active_gameobjects.index(gameobject)
-            self.active_gameobjects.remove(gameobject)
+        # Update this function to remove from dynamic_gameobjects
+        if gameobject in self.dynamic_gameobjects:
+            index = self.dynamic_gameobjects.index(gameobject)
+            self.dynamic_gameobjects.remove(gameobject)
             
-            # If the game object is of type Car, remove its index from car_indices
             if isinstance(gameobject, Car):
                 if index in self.car_indices:
                     self.car_indices.remove(index)
-                    
-                    # Adjust car_indices to account for the shifted indices after removal
                     for i in range(len(self.car_indices)):
                         if self.car_indices[i] > index:
                             self.car_indices[i] -= 1
 
 
     def create_explosion(self, x, y):
-        # Here we simply print the x and y for now
-        # Later on, you can instantiate the explosion graphics or effects here.
+        # Added explosion to dynamic_gameobjects
         explosion_sprite = Sprite("assets/explosion.png")
-        self.active_gameobjects.append(TemporaryObj(x, y, explosion_sprite,1))
-        print(f"Explosion created at ({x}, {y})!")
+        obj = TemporaryObj(x, y, explosion_sprite, 1)
+        self.dynamic_gameobjects.append(obj)
+        self.register_gameobject(obj)
 
 
 if __name__ == "__main__":
