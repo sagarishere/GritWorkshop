@@ -24,7 +24,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        self.spatial_grid = SpatialGrid(1536, 768, 192)
+        self.spatial_grid = SpatialGrid(1536, 768, 96) #96x96 256x256 384x384 192x192
 
         self.static_gameobjects = []
         self.dynamic_gameobjects = []
