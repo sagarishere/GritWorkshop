@@ -12,7 +12,7 @@ import math
 from TemporaryObj import TemporaryObj
 from AI_AGENT import AI_AGENT
 from Button import Button
-
+from SpatialGrid import SpatialGrid
 
 class Game:
 
@@ -24,6 +24,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
 
+        self.spatial_grid = SpatialGrid(1536, 768, 192)
 
         self.static_gameobjects = []
         self.dynamic_gameobjects = []
@@ -31,7 +32,7 @@ class Game:
         self.race_progress = []  # starting from sequence 0 for the car
         self.objects_to_remove = []
 
-        self.car_explosion_velocity = 0.05 # This is a percentage value
+        self.car_explosion_velocity = 0.50 # This is a percentage value
         self.TICK_RATE = 30
         self.race_lenght = -1
         self.render_skip_count = 10
@@ -41,7 +42,8 @@ class Game:
         track_map = MapArchive.map_one()
         self.static_gameobjects.extend(self.generate_track(track_map, 96))
         self.generate_track_sequence(track_map, self.static_gameobjects)
-
+        for obj in self.static_gameobjects:
+            self.spatial_grid.insert(obj)
         # Finish line addition
         self.finish_line = self.get_finish_line()
         self.register_gameobject(self.finish_line)
@@ -50,7 +52,7 @@ class Game:
         self.timer = 0  # timer in seconds
 
             # Generate AI controlled cars
-        num_ai_cars = 30  # or any number you want
+        num_ai_cars = 50  # or any number you want
         self.spawn_ai_cars(num_ai_cars)
 
 
@@ -71,14 +73,19 @@ class Game:
         #Todo: Add walls and track and finishline to some static arry, and have active gameobjeccts in another
 
     def run(self):
+        NORMAL_TICKS_PER_SECOND = 30  # Define the standard tick rate for "NORMAL" mode
+
         while self.running:
             # Calculate the elapsed time based on the current FPS
             current_fps = self.clock.get_fps()
-            elapsed_time = 1 / max(current_fps, 1)  # Avoid division by zero
-            
+
+            # Calculate how many logical ticks have occurred during this frame
+            logical_ticks = current_fps / NORMAL_TICKS_PER_SECOND
+            elapsed_time = logical_ticks / max(NORMAL_TICKS_PER_SECOND, 1)  # Convert ticks to seconds
+
             # Update the timer with the elapsed time
             self.timer += elapsed_time
-            
+
             self.handle_events()
             self.update()
             
@@ -190,11 +197,11 @@ class Game:
         return game_objects
     
     def check_collisions(self):
-        # Change this to handle dynamic objects colliding with static objects
         for idx in self.car_indices:
             car = self.dynamic_gameobjects[idx]
-
-            for obj in self.static_gameobjects:
+            neighboring_objects = self.spatial_grid.get_neighboring_objects(car.x, car.y)
+            
+            for obj in neighboring_objects:
                 if isinstance(obj, Wall):
                     if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
                         dx = car.rect.centerx - obj.sprite.get_rect().centerx
