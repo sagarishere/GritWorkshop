@@ -55,7 +55,7 @@ class Game:
         street_W = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetW.png")
 
         grass = Sprite("assets/TopDownCityTextures/Environment_Textures/Grass/grass.png")
-        grass_with_stone = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/grassWithStone.png")
+        grass_with_stone = Sprite("assets/TopDownCityTextures/Environment_Textures/Grass/grassWithStone.png")
 
         self.sprite_dictionary = {
             0:finish_line_sprite,
