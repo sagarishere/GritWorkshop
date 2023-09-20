@@ -39,9 +39,43 @@ class Game:
         self.current_skip = 0
         self.game_state = "NORMAL"
 
+
+        
+        wall_sprite = Sprite("assets/wall.jpg")  # Represents value 2
+        track_sprite = Sprite("assets/track.jpg")  # Represents value 1
+        finish_line_sprite = Sprite("assets/finish.jpg")  # Represents value 0
+
+        street_E = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetE.png")
+        street_N = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetN.png")
+        street_NE = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetNE.png")
+        street_NW = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetNW.png")
+        street_S = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetS.png")
+        street_SE = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetSE.png")
+        street_SW = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetSW.png")
+        street_W = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetW.png")
+
+
+
+
+        self.sprite_dictionary = {
+            0:finish_line_sprite,
+            1:track_sprite,
+            2:wall_sprite,
+            3:street_E,
+            4:street_N,
+            5:street_NE,
+            6:street_NW,
+            7:street_S,
+            8:street_SE,
+            9:street_SW,
+            10:street_W
+        }
+
+
+
         track_map = MapArchive.map_one()
         self.static_gameobjects.extend(self.generate_track(track_map, 96))
-        self.generate_track_sequence(track_map, self.static_gameobjects)
+        self.generate_track_sequence(track_map["map_layout"], self.static_gameobjects)
         for obj in self.static_gameobjects:
             self.spatial_grid.insert(obj)
         # Finish line addition
@@ -54,6 +88,8 @@ class Game:
             # Generate AI controlled cars
         num_ai_cars = 50  # or any number you want
         self.spawn_ai_cars(num_ai_cars)
+
+
 
 
 
@@ -118,7 +154,6 @@ class Game:
         self.TICK_RATE = 30  # or whatever your initial tick rate was
         self.game_state = "NORMAL"
 
-
     def update(self):
         if len(self.car_indices) == 0:
             self.game_over()
@@ -132,18 +167,12 @@ class Game:
         #self.race_progress_text.update_text("Race Progress:" + str(self.race_progress[0][car1]), self.renderer.width, self.renderer.height)
         self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
-
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             self.simulate_button.handle_event(event)
             self.normal_button.handle_event(event)
-
-
-
-
-
 
     def game_over(self):
         print("Game Over! Total time taken:", self.timer, "seconds")
@@ -172,27 +201,32 @@ class Game:
                 return obj
         return None
 
-    def generate_track(self,track_map, map_spacing):
+
+
+    def generate_track(self, track_map, map_spacing):
         game_objects = []
         track_sequence = 0  # to keep the count of track segments
 
         # iterate through the rows and columns of the track_map
-        for y, row in enumerate(track_map):
-            for x, item in enumerate(row):
-                # Assuming you have sprite paths or objects defined elsewhere. 
+        for y in range(len(track_map["map_layout"])):
+            for x in range(len(track_map["map_layout"][y])):
+
+                # Assuming you have sprite paths or objects defined elsewhere.
                 # Replace these with the appropriate sprites for each type.
-                wall_sprite = Sprite("assets/wall.jpg")
-                track_sprite = Sprite("assets/track.jpg")
-                finish_line_sprite = Sprite("assets/finish.jpg")
+
+
+                # Accessing the item directly using y and x indices
+                item = track_map["map_layout"][y][x]
+                sprite = self.sprite_dictionary[track_map["map_sprites"][y][x]]
 
                 # Create corresponding game objects based on item's type
                 if item == 0:
-                    game_objects.append(FinishLine(x* map_spacing, y* map_spacing, finish_line_sprite))
+                    game_objects.append(FinishLine(x * map_spacing, y * map_spacing, sprite))
                 elif item == 1:
-                    game_objects.append(Track(x * map_spacing, y* map_spacing, track_sprite, -1, x,y))
+                    game_objects.append(Track(x * map_spacing, y * map_spacing, sprite, -1, x, y))
                     track_sequence += 1  # increment the sequence counter for the next track segment
                 elif item == 2:
-                    game_objects.append(Wall(x* map_spacing, y* map_spacing, wall_sprite))
+                    game_objects.append(Wall(x * map_spacing, y * map_spacing, sprite))
 
         return game_objects
     
