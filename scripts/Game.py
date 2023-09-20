@@ -10,7 +10,7 @@ from GameObject import GameObject
 import MapArchive
 import math
 from TemporaryObj import TemporaryObj
-from scripts.ai_scripts import AI_AGENT
+from AI_AGENT import AI_AGENT
 from Button import Button
 from SpatialGrid import SpatialGrid
 
