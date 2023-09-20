@@ -1,6 +1,6 @@
 from INDIVIDUAL import Individual
 import random
-
+from game_scripts import Game
 
 class EVOLUTIONARY_ALGORITHM:
     def __init__(self, agent, population_size=50, mutation_rate=0.01, generations=100):
@@ -24,18 +24,38 @@ class EVOLUTIONARY_ALGORITHM:
             selected.append(i if self.fitness(i) > self.fitness(j) else j)
         return selected
 
-    def run(self):
-        for generation in range(self.generations):
-            selected = self.selection()
-            children = []
-            for i in range(0, len(selected), 2):
-                child1 = selected[i].crossover(selected[i+1])
-                child2 = selected[i+1].crossover(selected[i])
-                child1.mutate(self.mutation_rate)
-                child2.mutate(self.mutation_rate)
-                children.extend([child1, child2])
-            self.population = children
+    def evaluate_population(self, game):
+        for individual in self.population:
+            # Start the game with the current AI_AGENT's genes as the decision input
+            game.reset_game_state()  # Reset the game to its initial state
+            game.run(individual)  # This will run the game loop using this individual's genes
 
-            # Print the best individual in the current generation
-            best_individual = max(self.population, key=self.fitness)
-            print(f"Generation {generation + 1}: Best fitness = {self.fitness(best_individual)}")
+
+    def run(self, game):
+            for generation in range(self.generations):
+                # Evaluate each individual's fitness by running the game
+                fitness_values = [self.evaluate_individual(game, ind) for ind in self.population]
+
+                # Selection
+                selected = self.selection(fitness_values)
+                
+                # Crossover and Mutation to produce the next generation
+                children = []
+                for i in range(0, len(selected), 2):
+                    child1 = selected[i].crossover(selected[i+1])
+                    child2 = selected[i+1].crossover(selected[i])
+                    child1.mutate(self.mutation_rate)
+                    child2.mutate(self.mutation_rate)
+                    children.extend([child1, child2])
+
+                self.population = children
+                
+                # Print the best individual in the current generation
+                best_fitness = max(fitness_values)
+                print(f"Generation {generation + 1}: Best fitness = {best_fitness}")
+
+
+# Usage:
+game_instance = Game()
+evo_algo = EVOLUTIONARY_ALGORITHM(agent=None)  # Assuming the agent parameter is not necessary now
+evo_algo.run(game_instance)

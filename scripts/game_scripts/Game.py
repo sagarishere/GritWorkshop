@@ -10,7 +10,7 @@ from GameObject import GameObject
 import MapArchive
 import math
 from TemporaryObj import TemporaryObj
-from ai_scripts import AI_AGENT
+from scripts.ai_scripts import AI_AGENT
 from Button import Button
 from SpatialGrid import SpatialGrid
 
@@ -98,8 +98,42 @@ class Game:
 
         print("Init done..")
 
+    
+    def reset_game_state(self):
+        # Reset the timer
+        self.timer = 0
+        
+        # Remove all dynamic game objects and AI cars
+        for idx in self.car_indices:
+            car = self.dynamic_gameobjects[idx]
+            # Here, we're assuming there's a method to destroy or deregister cars. 
+            # You might need to adapt this to your actual method of destroying game objects.
+            self.remove_gameobject(car)
+            #self.deregister_gameobject(car)
+        self.dynamic_gameobjects.clear()
+        self.car_indices.clear()
 
-        #Todo: Add walls and track and finishline to some static arry, and have active gameobjeccts in another
+        # Reset race progress
+        self.race_progress = []
+        
+        # Reset texts
+        self.race_progress_text.update_text("", self.renderer.width, self.renderer.height)
+        self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
+        self.fps_text.update_text("", self.renderer.width, self.renderer.height)
+        
+        # Repopulate AI cars
+        num_ai_cars = 50
+        self.spawn_ai_cars(num_ai_cars)
+        
+        # Reset game state
+        self.game_state = "NORMAL"
+        
+        # Clean up any other leftover states or attributes
+        self.objects_to_remove.clear()
+        self.current_skip = 0
+
+
+    print("Game state reset complete.")
 
     def run(self):
         NORMAL_TICKS_PER_SECOND = 30  # Define the standard tick rate for "NORMAL" mode
@@ -107,17 +141,15 @@ class Game:
         while self.running:
             # Calculate the elapsed time based on the current FPS
             current_fps = self.clock.get_fps()
-
-            # Calculate how many logical ticks have occurred during this frame
             logical_ticks = current_fps / NORMAL_TICKS_PER_SECOND
-            elapsed_time = logical_ticks / max(NORMAL_TICKS_PER_SECOND, 1)  # Convert ticks to seconds
-
-            # Update the timer with the elapsed time
+            elapsed_time = logical_ticks / max(NORMAL_TICKS_PER_SECOND, 1)  
             self.timer += elapsed_time
-
             self.handle_events()
             self.update()
-            
+            if self.timer > 5:
+                self.reset_game_state()
+
+
             if self.game_state == "SIMULATE":
                 # Only render every fifth frame in SIMULATE state
                 self.current_skip += 1
@@ -130,6 +162,19 @@ class Game:
 
             self.check_collisions()
             self.clock.tick(self.TICK_RATE)
+
+    def update(self):
+        if len(self.car_indices) == 0:
+            self.game_over()
+
+        for x in range(len(self.dynamic_gameobjects)):
+            self.dynamic_gameobjects[x].update()
+
+        self.cleanup_destroyed_objects()
+        formatted_timer  = '%.3f'%(self.timer)
+
+        #self.race_progress_text.update_text("Race Progress:" + str(self.race_progress[0][car1]), self.renderer.width, self.renderer.height)
+        self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
     def render_game(self, current_fps):
         # Calculate and display the FPS
@@ -146,19 +191,6 @@ class Game:
     def normal(self):
         self.TICK_RATE = 30  # or whatever your initial tick rate was
         self.game_state = "NORMAL"
-
-    def update(self):
-        if len(self.car_indices) == 0:
-            self.game_over()
-
-        for x in range(len(self.dynamic_gameobjects)):
-            self.dynamic_gameobjects[x].update()
-
-        self.cleanup_destroyed_objects()
-        formatted_timer  = '%.3f'%(self.timer)
-
-        #self.race_progress_text.update_text("Race Progress:" + str(self.race_progress[0][car1]), self.renderer.width, self.renderer.height)
-        self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
     def handle_events(self):
         for event in pygame.event.get():
