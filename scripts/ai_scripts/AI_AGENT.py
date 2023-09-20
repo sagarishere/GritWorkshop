@@ -2,12 +2,21 @@ import random
 
 class AI_AGENT:
     def __init__(self):
-        # You can initialize any internal states or variables here
         pass
       
 
     
+    def TARGET_FUNCTION(self):
+        #declare what game state gives reward / fitness
+        pass
+    
+    
+    def SAVE_AGENT(self):
+        pass
 
+    
+    def AI_INPUT(self):
+        pass
 
     def GET_AI_OUTPUT(self):
         """

@@ -10,7 +10,7 @@ from GameObject import GameObject
 import MapArchive
 import math
 from TemporaryObj import TemporaryObj
-from AI_AGENT import AI_AGENT
+from ai_scripts import AI_AGENT
 from Button import Button
 from SpatialGrid import SpatialGrid
 
@@ -86,10 +86,6 @@ class Game:
         num_ai_cars = 50  # or any number you want
         self.spawn_ai_cars(num_ai_cars)
 
-
-
-
-
         self.race_progress_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 50))
         self.timer_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 75))
         self.renderer.text_objects.extend([self.race_progress_text, self.timer_text])
@@ -107,7 +103,7 @@ class Game:
 
     def run(self):
         NORMAL_TICKS_PER_SECOND = 30  # Define the standard tick rate for "NORMAL" mode
-
+        print("Starting Run Loop...")
         while self.running:
             # Calculate the elapsed time based on the current FPS
             current_fps = self.clock.get_fps()
