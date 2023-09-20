@@ -39,6 +39,10 @@ class Game:
         self.current_skip = 0
         self.game_state = "NORMAL"
 
+
+        
+        wall_sprite = Sprite("assets/wall.jpg")  # Represents value 2
+        track_sprite = Sprite("assets/track.jpg")  # Represents value 1
         finish_line_sprite = Sprite("assets/finish.jpg")  # Represents value 0
 
         street_E = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetE.png")
@@ -52,6 +56,8 @@ class Game:
 
         self.sprite_dictionary = {
             0:finish_line_sprite,
+            1:track_sprite,
+            2:wall_sprite,
             3:street_E,
             4:street_N,
             5:street_NE,
@@ -79,6 +85,10 @@ class Game:
             # Generate AI controlled cars
         num_ai_cars = 50  # or any number you want
         self.spawn_ai_cars(num_ai_cars)
+
+
+
+
 
         self.race_progress_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 50))
         self.timer_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 75))

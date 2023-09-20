@@ -4,6 +4,10 @@ class AI_AGENT:
     def __init__(self):
         # You can initialize any internal states or variables here
         pass
+      
+
+    
+
 
     def GET_AI_OUTPUT(self):
         """
