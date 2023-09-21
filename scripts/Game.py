@@ -13,7 +13,7 @@ from TemporaryObj import TemporaryObj
 from AI_AGENT import AI_AGENT
 from Button import Button
 from SpatialGrid import SpatialGrid
-
+from NEATCore import NEATCore
 class Game:
 
     def __init__(self):
@@ -22,6 +22,9 @@ class Game:
         height = 768
         self.renderer = Renderer(width, height)
         self.clock = pygame.time.Clock()
+
+        self.neat_core = NEATCore("scripts/config-feedforward.txt")
+
         self.running = True
 
         self.spatial_grid = SpatialGrid(1536, 768, 96) #96x96 256x256 384x384 192x192
@@ -31,6 +34,8 @@ class Game:
         self.car_indices = []
         self.race_progress = []  # starting from sequence 0 for the car
         self.objects_to_remove = []
+        self.AI_AGENTS = []
+
 
         self.car_explosion_velocity = 0.50 # This is a percentage value
         self.TICK_RATE = 30
@@ -102,57 +107,16 @@ class Game:
 
         print("Init done..")
 
-    
-    def reset_game_state(self):
-        # Reset the timer
-        self.timer = 0
-        
-        # Remove all dynamic game objects and AI cars
-        for idx in self.car_indices:
-            car = self.dynamic_gameobjects[idx]
-            # Here, we're assuming there's a method to destroy or deregister cars. 
-            # You might need to adapt this to your actual method of destroying game objects.
-            self.remove_gameobject(car)
-            #self.deregister_gameobject(car)
-        self.dynamic_gameobjects.clear()
-        self.car_indices.clear()
-
-        # Reset race progress
-        self.race_progress = []
-        
-        # Reset texts
-        self.race_progress_text.update_text("", self.renderer.width, self.renderer.height)
-        self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
-        self.fps_text.update_text("", self.renderer.width, self.renderer.height)
-        
-        # Repopulate AI cars
-        num_ai_cars = 50
-        self.spawn_ai_cars(num_ai_cars)
-        
-        # Reset game state
-        self.game_state = "NORMAL"
-        
-        # Clean up any other leftover states or attributes
-        self.objects_to_remove.clear()
-        self.current_skip = 0
-
-
-    print("Game state reset complete.")
-
     def run(self):
-        NORMAL_TICKS_PER_SECOND = 30  # Define the standard tick rate for "NORMAL" mode
+        NORMAL_TICKS_PER_SECOND = 30 
         print("Starting Run Loop...")
         while self.running:
-            # Calculate the elapsed time based on the current FPS
             current_fps = self.clock.get_fps()
             logical_ticks = current_fps / NORMAL_TICKS_PER_SECOND
             elapsed_time = logical_ticks / max(NORMAL_TICKS_PER_SECOND, 1)  
             self.timer += elapsed_time
             self.handle_events()
             self.update()
-        #   if self.timer > 5:
-        #     self.reset_game_state()
-
 
             if self.game_state == "SIMULATE":
                 # Only render every fifth frame in SIMULATE state
@@ -172,6 +136,10 @@ class Game:
             self.game_over()
 
         for x in range(len(self.dynamic_gameobjects)):
+            if isinstance(self.dynamic_gameobjects[x], Car) and hasattr(self.dynamic_gameobjects[x], 'ai_agent'):  # Assuming your car objects have an 'ai_agent' attribute
+                obj = self.dynamic_gameobjects[x]
+                # Set inputs for the agent
+                obj.ai_agent.AI_INPUT([obj.x, obj.y, obj.angle, obj.vel])
             self.dynamic_gameobjects[x].update()
 
         self.cleanup_destroyed_objects()
@@ -216,7 +184,11 @@ class Game:
         car_sprite = Sprite("assets/car1.png")
         for _ in range(num_cars):
             ai_car = Car(self.finish_line.x, self.finish_line.y, car_sprite, max_vel=20, rotation_vel=5, angle=270, AI_CONTROLLED=True)
-            ai_car.set_ai_agent_controller(AI_AGENT())
+
+            genome = self.neat_core.get_new_genome()
+            agent = AI_AGENT(genome, self.neat_core.config)
+            self.AI_AGENTS.append(agent)
+            ai_car.set_ai_agent_controller(agent)
 
             self.register_gameobject(ai_car)
             self.dynamic_gameobjects.append(ai_car)
@@ -229,8 +201,6 @@ class Game:
             if isinstance(obj, FinishLine):
                 return obj
         return None
-
-
 
     def generate_track(self, track_map, map_spacing):
         game_objects = []
@@ -375,6 +345,43 @@ class Game:
         obj = TemporaryObj(x, y, explosion_sprite, 1, mark_for_removal_callback=self.mark_for_removal)
         self.dynamic_gameobjects.append(obj)
         self.register_gameobject(obj)
+
+    def reset_game_state(self):
+            # Reset the timer
+            self.timer = 0
+            
+            # Remove all dynamic game objects and AI cars
+            for idx in self.car_indices:
+                car = self.dynamic_gameobjects[idx]
+                # Here, we're assuming there's a method to destroy or deregister cars. 
+                # You might need to adapt this to your actual method of destroying game objects.
+                self.remove_gameobject(car)
+                #self.deregister_gameobject(car)
+            self.dynamic_gameobjects.clear()
+            self.car_indices.clear()
+
+            # Reset race progress
+            self.race_progress = []
+            
+            # Reset texts
+            self.race_progress_text.update_text("", self.renderer.width, self.renderer.height)
+            self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
+            self.fps_text.update_text("", self.renderer.width, self.renderer.height)
+            
+            # Repopulate AI cars
+            num_ai_cars = 50
+            self.spawn_ai_cars(num_ai_cars)
+            
+            # Reset game state
+            self.game_state = "NORMAL"
+            
+            # Clean up any other leftover states or attributes
+            self.objects_to_remove.clear()
+            self.current_skip = 0
+            print("Game state reset complete.")
+
+
+        
 
 
 if __name__ == "__main__":
