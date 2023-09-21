@@ -131,10 +131,24 @@ class Game:
             self.check_collisions()
             self.clock.tick(self.TICK_RATE)
 
+
+    def check_stop_condition(self):
+        # Check progress and assign rewards
+        total_cars = len(self.AI_AGENTS)  # Assuming you have a list of AI agents
+        cars_that_progressed = sum(1 for progress in self.race_progress for _, value in progress.items() if value > 0)
+
+        # If less than 10% of cars have increased their race_progress in the last 5 seconds
+        if self.timer >= 5.0 and cars_that_progressed < total_cars * 0.1:
+            # Here, you can end the episode early if needed
+            print("RESETING DUE TO NO PROGRESS")
+            self.reset_game_state()
+
+
     def update(self):
         if len(self.car_indices) == 0:
             self.game_over()
 
+        self.check_stop_condition()
         for x in range(len(self.dynamic_gameobjects)):
             if isinstance(self.dynamic_gameobjects[x], Car) and hasattr(self.dynamic_gameobjects[x], 'ai_agent'):  # Assuming your car objects have an 'ai_agent' attribute
                 obj = self.dynamic_gameobjects[x]
@@ -298,6 +312,7 @@ class Game:
                 dfs(nx, ny, sequence + 1)
             else:
                 self.race_lenght = sequence
+
                 print("SEQUENCE:", sequence)
 
         # Find the finish line
@@ -346,39 +361,45 @@ class Game:
         self.dynamic_gameobjects.append(obj)
         self.register_gameobject(obj)
 
-    def reset_game_state(self):
-            # Reset the timer
-            self.timer = 0
-            
-            # Remove all dynamic game objects and AI cars
-            for idx in self.car_indices:
-                car = self.dynamic_gameobjects[idx]
-                # Here, we're assuming there's a method to destroy or deregister cars. 
-                # You might need to adapt this to your actual method of destroying game objects.
-                self.remove_gameobject(car)
-                #self.deregister_gameobject(car)
-            self.dynamic_gameobjects.clear()
-            self.car_indices.clear()
+    def reset_game_state(self):        
+        for idx, car in enumerate(self.car_indices):
+            agent = car.ai_agent  # Assuming each car has a reference to its AI agent
+            progress = self.race_progress[idx]
+            reward = progress / self.race_lenght  # X being the total length or max progress value
+            agent.genome.fitness = reward  # Assign the reward as fitness
 
-            # Reset race progress
-            self.race_progress = []
-            
-            # Reset texts
-            self.race_progress_text.update_text("", self.renderer.width, self.renderer.height)
-            self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
-            self.fps_text.update_text("", self.renderer.width, self.renderer.height)
-            
-            # Repopulate AI cars
-            num_ai_cars = 50
-            self.spawn_ai_cars(num_ai_cars)
-            
-            # Reset game state
-            self.game_state = "NORMAL"
-            
-            # Clean up any other leftover states or attributes
-            self.objects_to_remove.clear()
-            self.current_skip = 0
-            print("Game state reset complete.")
+        # Reset the timer
+        self.timer = 0
+        
+        # Remove all dynamic game objects and AI cars
+        for idx in self.car_indices:
+            car = self.dynamic_gameobjects[idx]
+            # Here, we're assuming there's a method to destroy or deregister cars. 
+            # You might need to adapt this to your actual method of destroying game objects.
+            self.remove_gameobject(car)
+            #self.deregister_gameobject(car)
+        self.dynamic_gameobjects.clear()
+        self.car_indices.clear()
+
+        # Reset race progress
+        self.race_progress = []
+        
+        # Reset texts
+        self.race_progress_text.update_text("", self.renderer.width, self.renderer.height)
+        self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
+        self.fps_text.update_text("", self.renderer.width, self.renderer.height)
+        
+        # Repopulate AI cars
+        num_ai_cars = 50
+        self.spawn_ai_cars(num_ai_cars)
+        
+        # Reset game state
+        self.game_state = "NORMAL"
+        
+        # Clean up any other leftover states or attributes
+        self.objects_to_remove.clear()
+        self.current_skip = 0
+        print("Game state reset complete.")
 
 
         
