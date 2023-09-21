@@ -75,7 +75,7 @@ class Game:
 
 
 
-        track_map = MapArchive.map_one()
+        track_map = MapArchive.map_two()
         self.static_gameobjects.extend(self.generate_track(track_map, 96))
         self.generate_track_sequence(track_map["map_layout"], self.static_gameobjects)
         for obj in self.static_gameobjects:
@@ -84,7 +84,6 @@ class Game:
         self.finish_line = self.get_finish_line()
         self.register_gameobject(self.finish_line)
 
-        self.test_sprite = Sprite("assets/track2.jpg")
         self.timer = 0  # timer in seconds
 
             # Generate AI controlled cars
@@ -151,8 +150,8 @@ class Game:
             self.timer += elapsed_time
             self.handle_events()
             self.update()
-            if self.timer > 5:
-                self.reset_game_state()
+        #   if self.timer > 5:
+        #     self.reset_game_state()
 
 
             if self.game_state == "SIMULATE":
@@ -236,7 +235,7 @@ class Game:
     def generate_track(self, track_map, map_spacing):
         game_objects = []
         track_sequence = 0  # to keep the count of track segments
-
+        track_map = MapArchive.translate_map_layout(track_map["map_layout"])
         # iterate through the rows and columns of the track_map
         for y in range(len(track_map["map_layout"])):
             for x in range(len(track_map["map_layout"][y])):
@@ -293,7 +292,6 @@ class Game:
                             expected_sequence = self.race_progress[0][car]
                             if obj.sequence_number == expected_sequence + 1:
                                 self.race_progress[0][car] = obj.sequence_number
-                                obj.sprite = self.test_sprite
                         except:
                             pass
                 elif isinstance(obj, FinishLine):

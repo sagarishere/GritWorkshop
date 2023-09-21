@@ -21,34 +21,27 @@ def map_one(): # 16x8
             [1, 2, 1, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2],
             [1, 2, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1],
             [1, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1],
-            [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1]],
-        "map_sprites": [ 
-            [6, 4, 5, 12, 11, 12, 6, 4, 5, 12, 12, 12, 12, 12, 12, 12],
-            [3, 12, 9, 4, 0, 4, 8, 11, 9, 4, 4, 4, 4, 4, 4, 5],
-            [3, 11, 12, 12, 11, 12, 12, 11, 12, 11, 12, 11, 11, 12, 11, 3],
-            [3, 12, 6, 4, 4, 4, 4, 5, 12, 6, 4, 4, 4, 4, 4, 8],
-            [3, 11, 3, 12, 12, 12, 12, 3, 12, 3, 12, 12, 11, 12, 12, 11],
-            [3, 11, 9, 4, 4, 5, 11, 3, 11, 9, 4, 4, 4, 4, 4, 5],
-            [3, 12, 12, 12, 12, 3, 12, 3, 12, 12, 12, 12, 12, 12, 11, 3],
-            [9, 4, 4, 4, 4, 8, 11, 9, 4, 4, 4, 4, 4, 4, 4, 8]]
+            [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
     }
 
 
 
+def map_two(): # 16x8
+    return {
+        "map_layout": [
+            [1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 1],
+            [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 2, 1],
+            [1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1],
+            [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
+            [1, 2, 2, 1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 1],
+            [1, 2, 2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1],
+            [1, 2, 0, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 1],
+            [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1],
+            ]
+    }
 
-def map_four(): # 16x8
-    return [
-    [1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
-    [1, 2, 1, 1, 0, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
-    [1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1],
-    [1, 2, 1, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2],
-    [1, 2, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1],
-    [1, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1],
-    [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-]
 
-def map_two():
+def map_four():
     return [
     [2, 2, 2, 2, 2, 2, 2, 2],
     [2, 1, 1, 1, 1, 1, 1, 2],
@@ -78,3 +71,46 @@ def map_three(): #8x8
     [2, 1, 1, 0, 1, 1, 1, 2],
     [2, 2, 2, 2, 2, 2, 2, 2]
 ]
+
+
+def translate_map_layout(map_layout):
+    rows, cols = len(map_layout), len(map_layout[0])
+    map_sprites = [[0] * cols for _ in range(rows)]
+
+    for i in range(rows):
+        for j in range(cols):
+            # Check surrounding tiles:
+            top = map_layout[i-1][j] if i-1 >= 0 else None
+            bottom = map_layout[i+1][j] if i+1 < rows else None
+            left = map_layout[i][j-1] if j-1 >= 0 else None
+            right = map_layout[i][j+1] if j+1 < cols else None
+
+            # Convert the tile:
+            if map_layout[i][j] == 2:  # wall
+                map_sprites[i][j] = 11 if (i + j) % 2 == 0 else 12
+            elif map_layout[i][j] == 0:  # start
+                map_sprites[i][j] = 0
+            else:  # track
+                if (left in [1, 0] and right in [1, 0]):
+                    map_sprites[i][j] = 4  # Street N
+                elif (top in [1, 0] and bottom in [1, 0]):
+                    map_sprites[i][j] = 3  # Street E
+                elif (left in [1, 0] and right in [1, 0]):
+                    map_sprites[i][j] = 7  # Street S
+                elif (top in [1, 0] and bottom in [1, 0]):
+                    map_sprites[i][j] = 10  # Street W
+                elif (right in [1, 0] and bottom in [1, 0]):
+                    map_sprites[i][j] = 6  # Street NW
+                elif (bottom in [1, 0] and left in [1, 0]):
+                    map_sprites[i][j] = 5  # Street NE
+                elif (top in [1, 0] and right in [1, 0]):
+                    map_sprites[i][j] = 9  # Street SW
+                elif (top in [1, 0] and left in [1, 0]):
+                    map_sprites[i][j] = 8  # Street SE
+                else:
+                    map_sprites[i][j] = 1  # default track sprite
+
+    return {
+        "map_layout": map_layout,
+        "map_sprites": map_sprites
+    }
