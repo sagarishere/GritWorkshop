@@ -44,6 +44,7 @@ class Game:
         self.current_skip = 0
         self.game_state = "NORMAL"
 
+        self.generation = 0
 
         
         wall_sprite = Sprite("assets/wall.jpg")  # Represents value 2
@@ -148,7 +149,11 @@ class Game:
         if len(self.car_indices) == 0:
             self.game_over()
 
-        self.check_stop_condition()
+        #self.check_stop_condition()
+
+        if self.timer > 30:
+            self.reset_game_state()
+
         for x in range(len(self.dynamic_gameobjects)):
             if isinstance(self.dynamic_gameobjects[x], Car) and hasattr(self.dynamic_gameobjects[x], 'ai_agent'):  # Assuming your car objects have an 'ai_agent' attribute
                 obj = self.dynamic_gameobjects[x]
@@ -362,11 +367,13 @@ class Game:
         self.register_gameobject(obj)
 
     def reset_game_state(self):        
-        for idx, car in enumerate(self.car_indices):
-            agent = car.ai_agent  # Assuming each car has a reference to its AI agent
-            progress = self.race_progress[idx]
-            reward = progress / self.race_lenght  # X being the total length or max progress value
+        for idx in self.car_indices:
+            car = self.dynamic_gameobjects[idx]  # Accessing Car object using index from car_indices
+            agent = car.ai_agent
+            progress = self.race_progress[idx][car]  # Assuming race_progress stores progress as {car: progress}
+            reward = progress / self.race_lenght
             agent.genome.fitness = reward  # Assign the reward as fitness
+
 
         # Reset the timer
         self.timer = 0
@@ -394,12 +401,13 @@ class Game:
         self.spawn_ai_cars(num_ai_cars)
         
         # Reset game state
-        self.game_state = "NORMAL"
+        #self.game_state = "NORMAL"
         
         # Clean up any other leftover states or attributes
         self.objects_to_remove.clear()
         self.current_skip = 0
-        print("Game state reset complete.")
+        print("Game state reset complete, generation:", self.generation)
+        self.generation += 1
 
 
         

@@ -5,7 +5,6 @@ class AI_AGENT:
         self.genome = genome
         self.network = neat.nn.FeedForwardNetwork.create(genome, config)
         self.inputs = []
-        print("Skynet loading...")
     
     def TARGET_FUNCTION(self):
         #declare what game state gives reward / fitness
