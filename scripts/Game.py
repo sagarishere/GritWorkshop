@@ -16,6 +16,8 @@ import SpriteDictionary
 from TemporaryObj import TemporaryObj
 import random
 from TARGET_FUNCTION import compute_fitness
+from Line import Line
+from RaycastManager import RaycastManager
 class Game:
 
     def __init__(self, neat_core):
@@ -28,13 +30,18 @@ class Game:
         map_handler =  MapHandler()
         self.sprite_dictionary= SpriteDictionary.load_dicionary()
         self.spatial_grid = SpatialGrid(1536, 768, 96) #96x96 256x256 384x384 192x192
-
+        self.raycast_manager = RaycastManager(self.spatial_grid)
 
         self.static_gameobjects =   []
         self.dynamic_gameobjects =  []
         self.race_progress =        [] 
         self.objects_to_remove =    []
         self.AI_AGENTS =            []
+        self.line_objects =         []
+        
+ 
+
+
 
         self.TICK_RATE =         30
         self.race_lenght =       -1
@@ -43,7 +50,7 @@ class Game:
         self.game_state =   "NORMAL"
         self.running =          True
         self.timer =              0  
-        num_ai_cars =             50 
+        self.num_ai_cars =        1 
 
 
         self.generation = 0
@@ -56,7 +63,7 @@ class Game:
             self.spatial_grid.insert(obj)
         self.finish_line = self.get_finish_line()
         self.register_gameobject(self.finish_line)
-        self.spawn_ai_cars(num_ai_cars)
+        self.spawn_ai_cars(self.num_ai_cars)
         self.race_progress_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 50))
         self.timer_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 75))
         self.renderer.text_objects.extend([self.race_progress_text, self.timer_text])
@@ -99,6 +106,17 @@ class Game:
 
             self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
+            if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
+                self.game_over()
+                self.running = False
+
+            car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects)
+            for i, (start, end) in enumerate(ray_data):
+                print(start,end)
+                line_obj = self.line_objects[i]
+                line_obj.start_pos = start
+                line_obj.end_pos = end
+
             if self.game_state == "SIMULATE":
                 self.current_skip += 1
                 if self.current_skip >= self.render_skip_count:
@@ -106,10 +124,6 @@ class Game:
                     self.current_skip = 0 
             else:
                 self.render_game(current_fps)
-
-            if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
-                self.game_over()
-                self.running = False
 
             self.clock.tick(self.TICK_RATE)
 
@@ -133,6 +147,7 @@ class Game:
         self.renderer.RenderAllObjects(self.static_gameobjects + self.dynamic_gameobjects)
         self.renderer.RenderAllTextObjects()
         self.renderer.RenderAllButtons(self.buttons)
+        self.renderer.RenderAllLines(self.line_objects)
 
     def simulate(self):
         self.TICK_RATE = 999999
@@ -170,6 +185,7 @@ class Game:
             self.register_gameobject(ai_car)
             self.dynamic_gameobjects.append(ai_car)
             self.race_progress.append({ai_car: 0})  # starting from sequence 0 for each car
+            self.line_objects.append(Line(start=(0,0), end=(300,300),width=5))
 
     def get_finish_line(self):
         # This function should now loop over static_gameobjects
@@ -203,6 +219,7 @@ class Game:
             self.remove_gameobject(car)
             #self.deregister_gameobject(car)
         self.dynamic_gameobjects.clear()
+        self.line_objects.clear()
 
         # Reset race progress
         self.race_progress = []
@@ -212,9 +229,8 @@ class Game:
         self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
         self.fps_text.update_text("", self.renderer.width, self.renderer.height)
         
-        # Repopulate AI cars
-        num_ai_cars = 50
-        self.spawn_ai_cars(num_ai_cars)
+        
+        self.spawn_ai_cars(self.num_ai_cars)
         
         # Reset game state
         #self.game_state = "NORMAL"
@@ -225,7 +241,6 @@ class Game:
         #print("Game state reset complete, generation:", self.generation)
         self.generation += 1
         self.running = True
-
 
     def collect_game_data(self):
         """

@@ -39,3 +39,8 @@ class GameObject(SubjectInterface):
 
     def delete_self(self):
         self.notify_remove_gameobject()
+
+    def get_rect(self):
+        # Assume the sprite has a get_rect method that returns its bounding rectangle
+        rect = self.sprite.get_rect(topleft=(self.x, self.y))
+        return rect

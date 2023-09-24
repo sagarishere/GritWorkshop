@@ -67,7 +67,6 @@ class Car(GameObject):
         self.prev_x, self.prev_y = self.x, self.y  # Store the previous x and y before updating them
         self.handle_input()  # Handle inputs within the update method
         self.keep_on_screen()
-        # Any other update logic specific to Car goes here
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration, self.max_vel)
