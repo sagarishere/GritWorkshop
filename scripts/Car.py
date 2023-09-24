@@ -1,10 +1,12 @@
 from GameObject import GameObject
 import pygame
 import math
+from Sprite import Sprite
+from TemporaryObj import TemporaryObj
 
 class Car(GameObject):
 
-    def __init__(self, x, y, sprite, max_vel, rotation_vel, angle, AI_CONTROLLED=False):
+    def __init__(self, x, y, sprite, max_vel, rotation_vel, angle, car_explosion_velocity,AI_CONTROLLED=False):
         super().__init__(x, y, sprite)
         self.angle = angle
         self.rect = sprite.image.get_rect(topleft=(x, y))
@@ -17,6 +19,7 @@ class Car(GameObject):
         self.prev_x, self.prev_y = x, y  # Store the previous x and y positions
         self.AI_CONTROLLED = AI_CONTROLLED
         self.input_threshold = 0.5  # You can adjust this threshold as per your needs
+        self.car_explosion_velocity = car_explosion_velocity
 
     def get_input(self):
         if self.AI_CONTROLLED:
@@ -99,3 +102,11 @@ class Car(GameObject):
         
         self.x = min(max(self.x, 0), WIDTH - self.rect.width)
         self.y = min(max(self.y, 0), HEIGHT - self.rect.height)
+
+
+    
+    def create_explosion(self, x, y):
+        # Added explosion to dynamic_gameobjects
+        explosion_sprite = Sprite("assets/explosion.png")
+        obj = TemporaryObj(x, y, explosion_sprite, 1, mark_for_removal_callback=self.mark_for_removal)
+        self.notify_add_gameobject(obj)

@@ -7,12 +7,13 @@ from Track import Track
 from FinishLine import FinishLine
 from Wall import Wall
 from GameObject import GameObject
-import MapArchive
-import math
-from TemporaryObj import TemporaryObj
+from MapHandler import MapHandler
 from AI_AGENT import AI_AGENT
 from Button import Button
 from SpatialGrid import SpatialGrid
+import CollisionManager
+
+import SpriteDictionary
 from NEATCore import NEATCore
 class Game:
 
@@ -22,11 +23,12 @@ class Game:
         height = 768
         self.renderer = Renderer(width, height)
         self.clock = pygame.time.Clock()
+        map_handler =  MapHandler()
 
-        self.neat_core = NEATCore("scripts/config-feedforward.txt")
+        self.neat_core = NEATCore("D:\GritWorkshop\scripts\config-feedforward.txt")
 
         self.running = True
-
+        self.sprite_dictionary= SpriteDictionary.load_dicionary()
         self.spatial_grid = SpatialGrid(1536, 768, 96) #96x96 256x256 384x384 192x192
 
         self.static_gameobjects = []
@@ -36,8 +38,6 @@ class Game:
         self.objects_to_remove = []
         self.AI_AGENTS = []
 
-
-        self.car_explosion_velocity = 0.50 # This is a percentage value
         self.TICK_RATE = 30
         self.race_lenght = -1
         self.render_skip_count = 10
@@ -46,44 +46,12 @@ class Game:
 
         self.generation = 0
 
-        
-        wall_sprite = Sprite("assets/wall.jpg")  # Represents value 2
-        track_sprite = Sprite("assets/track.jpg")  # Represents value 1
-        finish_line_sprite = Sprite("assets/finish.jpg")  # Represents value 0
-
-        street_E = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetE.png")
-        street_N = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetN.png")
-        street_NE = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetNE.png")
-        street_NW = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetNW.png")
-        street_S = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetS.png")
-        street_SE = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetSE.png")
-        street_SW = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetSW.png")
-        street_W = Sprite("assets/TopDownCityTextures/Environment_Textures/Street/streetW.png")
-
-        grass = Sprite("assets/TopDownCityTextures/Environment_Textures/Grass/grass.png")
-        grass_with_stone = Sprite("assets/TopDownCityTextures/Environment_Textures/Grass/grassWithStone.png")
-
-        self.sprite_dictionary = {
-            0:finish_line_sprite,
-            1:track_sprite,
-            2:wall_sprite,
-            3:street_E,
-            4:street_N,
-            5:street_NE,
-            6:street_NW,
-            7:street_S,
-            8:street_SE,
-            9:street_SW,
-            10:street_W,
-            11:grass,
-            12:grass_with_stone
-        }
+        track_map = MapHandler.map_two()
+        self.static_gameobjects.extend(map_handler.generate_track(track_map, 96, sprite_dictionary=self.sprite_dictionary))
+        map_handler.generate_track_sequence(track_map["map_layout"], self.static_gameobjects)
+        self.race_lenght = map_handler.race_lenght
 
 
-
-        track_map = MapArchive.map_two()
-        self.static_gameobjects.extend(self.generate_track(track_map, 96))
-        self.generate_track_sequence(track_map["map_layout"], self.static_gameobjects)
         for obj in self.static_gameobjects:
             self.spatial_grid.insert(obj)
         # Finish line addition
@@ -129,7 +97,7 @@ class Game:
                 # In other states, always render
                 self.render_game(current_fps)
 
-            self.check_collisions()
+            CollisionManager.check_collisions(self.car_indices, self.dynamic_gameobjects, self.spatial_grid, self.race_progress)
             self.clock.tick(self.TICK_RATE)
 
 
@@ -202,7 +170,7 @@ class Game:
     def spawn_ai_cars(self, num_cars):
         car_sprite = Sprite("assets/car1.png")
         for _ in range(num_cars):
-            ai_car = Car(self.finish_line.x, self.finish_line.y, car_sprite, max_vel=20, rotation_vel=5, angle=270, AI_CONTROLLED=True)
+            ai_car = Car(self.finish_line.x, self.finish_line.y, car_sprite, max_vel=20, rotation_vel=5, angle=270, car_explosion_velocity=0.50 ,AI_CONTROLLED=True)
 
             genome = self.neat_core.get_new_genome()
             agent = AI_AGENT(genome, self.neat_core.config)
@@ -220,122 +188,6 @@ class Game:
             if isinstance(obj, FinishLine):
                 return obj
         return None
-
-    def generate_track(self, track_map, map_spacing):
-        game_objects = []
-        track_sequence = 0  # to keep the count of track segments
-        track_map = MapArchive.translate_map_layout(track_map["map_layout"])
-        # iterate through the rows and columns of the track_map
-        for y in range(len(track_map["map_layout"])):
-            for x in range(len(track_map["map_layout"][y])):
-
-                # Assuming you have sprite paths or objects defined elsewhere.
-                # Replace these with the appropriate sprites for each type.
-
-
-                # Accessing the item directly using y and x indices
-                item = track_map["map_layout"][y][x]
-                sprite = self.sprite_dictionary[track_map["map_sprites"][y][x]]
-
-                # Create corresponding game objects based on item's type
-                if item == 0:
-                    game_objects.append(FinishLine(x * map_spacing, y * map_spacing, sprite))
-                elif item == 1:
-                    game_objects.append(Track(x * map_spacing, y * map_spacing, sprite, -1, x, y))
-                    track_sequence += 1  # increment the sequence counter for the next track segment
-                elif item == 2:
-                    game_objects.append(Wall(x * map_spacing, y * map_spacing, sprite))
-
-        return game_objects
-    
-    def check_collisions(self):
-        for idx in self.car_indices:
-            car = self.dynamic_gameobjects[idx]
-            neighboring_objects = self.spatial_grid.get_neighboring_objects(car.x, car.y)
-            
-            for obj in neighboring_objects:
-                if isinstance(obj, Wall):
-                    if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
-                        dx = car.rect.centerx - obj.sprite.get_rect().centerx
-                        dy = car.rect.centery - obj.sprite.get_rect().centery
-                        collision_angle = math.atan2(dy, dx)
-                        car_angle_radians = math.radians(car.angle)
-
-                        angle_difference = abs(car_angle_radians - collision_angle)
-                        if angle_difference > math.pi:
-                            angle_difference = 2 * math.pi - angle_difference
-
-                        if car.vel > self.car_explosion_velocity * car.max_vel and (angle_difference > math.radians(45)):
-                            print("Car exploded!")
-                            self.create_explosion(car.x, car.y)
-                            self.remove_gameobject(car)
-                            break  # Exit the inner loop (obj loop) and move to the next car, if any
-
-
-                        car.x, car.y = car.prev_x, car.prev_y
-                        car.vel *= 0.5
-
-                elif isinstance(obj, Track):
-                    if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
-                        try:
-                            expected_sequence = self.race_progress[0][car]
-                            if obj.sequence_number == expected_sequence + 1:
-                                self.race_progress[0][car] = obj.sequence_number
-                        except:
-                            pass
-                elif isinstance(obj, FinishLine):
-                    if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
-                        try:
-                            current_progress = self.race_progress[0][car]
-                            if current_progress == self.race_lenght:
-                                self.game_over()
-                        except:
-                            pass
-
-    def generate_track_sequence(self, track_map, active_gameobjects):
-        # Helper function to get the next track segment
-        def get_next_segment(x, y, visited):
-            directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-            for dx, dy in directions:
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < len(track_map) and 0 <= ny < len(track_map[0]) and (nx, ny) not in visited and track_map[nx][ny] == 1:
-                    return nx, ny
-            return None, None
-
-        # Recursive function to assign sequence numbers
-        def dfs(x, y, sequence):
-            visited.add((x, y))
-            for obj in active_gameobjects:
-
-                if isinstance(obj, Track):
-                    # print("need:", x,y, " Gets:" ,obj.array_pos_x, obj.array_pos_y)
-                    if obj.array_pos_x == y and obj.array_pos_y == x:
-                        obj.sequence_number = sequence
-                        break
-            nx, ny = get_next_segment(x, y, visited)
-            if nx is not None:
-                dfs(nx, ny, sequence + 1)
-            else:
-                self.race_lenght = sequence
-
-                print("SEQUENCE:", sequence)
-
-        # Find the finish line
-        start_x, start_y = None, None
-        for i in range(len(track_map)):
-            for j in range(len(track_map[i])):
-                if track_map[i][j] == 0:
-                    start_x, start_y = i, j
-                    print("Found starting line at: " ,i,j)
-                    break
-            if start_x is not None:
-                print("Found starting line2")
-                break
-
-        # Initialize visited set and start the DFS
-        visited = {(start_x, start_y)}
-        next_x, next_y = get_next_segment(start_x, start_y, visited)
-        dfs(next_x, next_y, 0)
 
     def register_gameobject(self, gameobject):
         """Register the game as an observer for the game object."""
@@ -358,13 +210,6 @@ class Game:
                     for i in range(len(self.car_indices)):
                         if self.car_indices[i] > index:
                             self.car_indices[i] -= 1
-
-    def create_explosion(self, x, y):
-        # Added explosion to dynamic_gameobjects
-        explosion_sprite = Sprite("assets/explosion.png")
-        obj = TemporaryObj(x, y, explosion_sprite, 1, mark_for_removal_callback=self.mark_for_removal)
-        self.dynamic_gameobjects.append(obj)
-        self.register_gameobject(obj)
 
     def reset_game_state(self):        
         for idx in self.car_indices:

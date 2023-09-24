@@ -33,6 +33,9 @@ class GameObject(SubjectInterface):
         poi = mask.overlap(car_mask, offset)
         return poi
 
+
+    def add_object(self, obj):
+        self.notify_add_gameobject(obj)
+
     def delete_self(self):
-        print("Remove 2")
         self.notify_remove_gameobject()
