@@ -105,8 +105,11 @@ class Car(GameObject):
 
 
     
-    # def create_explosion(self, x, y):
-    #     # Added explosion to dynamic_gameobjects
-    #     explosion_sprite = Sprite("assets/explosion.png")
-    #     obj = TemporaryObj(x, y, explosion_sprite, 1)
-    #     self.notify_add_gameobject(obj)
+
+
+
+        # def create_explosion(self, x, y):
+        #     # Added explosion to dynamic_gameobjects
+        #     explosion_sprite = Sprite("assets/explosion.png")
+        #     obj = TemporaryObj(x, y, explosion_sprite, 1)
+        #     self.notify_add_gameobject(obj)

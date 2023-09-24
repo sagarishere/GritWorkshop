@@ -14,11 +14,12 @@ from SpatialGrid import SpatialGrid
 import CollisionManager
 import SpriteDictionary
 from TemporaryObj import TemporaryObj
-from NEATCore import NEATCore
-
+import random
+from TARGET_FUNCTION import compute_fitness
 class Game:
 
-    def __init__(self):
+    def __init__(self, neat_core):
+        self.neat_core = neat_core
         # Setting up the renderer
         width = 1536
         height = 768
@@ -27,7 +28,6 @@ class Game:
         map_handler =  MapHandler()
         self.sprite_dictionary= SpriteDictionary.load_dicionary()
         self.spatial_grid = SpatialGrid(1536, 768, 96) #96x96 256x256 384x384 192x192
-        self.neat_core = NEATCore("D:\GritWorkshop\scripts\config-feedforward.txt")
 
 
         self.static_gameobjects =   []
@@ -68,9 +68,9 @@ class Game:
 
         print("Init done..")
 
-    def run(self):
+    def run(self, agent):
         NORMAL_TICKS_PER_SECOND = 30 
-        print("Starting Run Loop...")
+
         while self.running:
             current_fps = self.clock.get_fps()
             logical_ticks = current_fps / NORMAL_TICKS_PER_SECOND
@@ -79,11 +79,13 @@ class Game:
             self.handle_events()
             if len(self.dynamic_gameobjects) == 0:
                 self.game_over()
+                self.running = False
 
             #self.check_stop_condition()
 
-            if self.timer > 30:
-                self.reset_game_state()
+            if self.timer > 2:
+                fitness_value = compute_fitness(self.collect_game_data())
+                return {'fitness': fitness_value}
 
             for x in range(len(self.dynamic_gameobjects)):
                 if isinstance(self.dynamic_gameobjects[x], Car) and hasattr(self.dynamic_gameobjects[x], 'ai_agent'):
@@ -107,8 +109,13 @@ class Game:
 
             if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
                 self.game_over()
+                self.running = False
 
             self.clock.tick(self.TICK_RATE)
+
+        fitness_value = compute_fitness(self.collect_game_data())
+        self.reset_game_state()
+        return {'fitness': fitness_value}
 
     def check_stop_condition(self):
         # Check progress and assign rewards
@@ -144,7 +151,6 @@ class Game:
 
     def game_over(self):
         print("Game Over! Total time taken:", self.timer, "seconds")
-        pass
     
     def mark_for_removal(self, game_object):
         """Mark a game object for removal."""
@@ -186,7 +192,6 @@ class Game:
             index = self.dynamic_gameobjects.index(gameobject)
             self.dynamic_gameobjects.remove(gameobject)
             
-
     def reset_game_state(self):        
         self.timer = 0
         for x in range(len(self.dynamic_gameobjects)):
@@ -217,16 +222,25 @@ class Game:
         # Clean up any other leftover states or attributes
         self.objects_to_remove.clear()
         self.current_skip = 0
-        print("Game state reset complete, generation:", self.generation)
+        #print("Game state reset complete, generation:", self.generation)
         self.generation += 1
+        self.running = True
 
 
+    def collect_game_data(self):
+        """
+        Collects and returns game-related data in a dictionary format. 
+        This data will be used by the target function to compute the fitness.
+        """
+        data = {
+            # Example:
+            # 'distance_traveled': self.distance,
+            # 'collisions': self.collisions_count,
+            # ...
+        }
+        return data
+
+
+    def QuitGame():
+        pygame.quit()
         
-
-
-if __name__ == "__main__":
-    print("starting game")
-    game = Game()
-    game.run()
-    pygame.quit()
-    print("ending game")
