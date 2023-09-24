@@ -14,4 +14,6 @@ class SubjectInterface:
 
     def notify_add_gameobject(self,obj):
         for observer in self._observers:
-            observer.remove_gameobject(obj)
+            observer.register_gameobject(obj)
+
+            

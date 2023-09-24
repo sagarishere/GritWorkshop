@@ -5,9 +5,10 @@ from Wall import Wall
 from Track import Track
 from Car import Car
 from FinishLine import FinishLine
+import time
 
 
-def check_collisions(car_indices, dynamic_gameobjects, spatial_grid, race_progress):
+def check_collisions(car_indices, dynamic_gameobjects, spatial_grid, race_progress, race_lenght):
         for idx in car_indices:
             car = dynamic_gameobjects[idx]
             neighboring_objects = spatial_grid.get_neighboring_objects(car.x, car.y)
@@ -24,11 +25,9 @@ def check_collisions(car_indices, dynamic_gameobjects, spatial_grid, race_progre
                         if angle_difference > math.pi:
                             angle_difference = 2 * math.pi - angle_difference
 
-                        if car.vel > car.car_explosion_velocity * car.max_vel and (angle_difference > math.radians(45)):
-                            print("Car exploded!")
-                            car.create_explosion(car.x, car.y)
-                            car.delete_self(car)
-                            break  # Exit the inner loop (obj loop) and move to the next car, if any
+                        if car.vel > car.car_explosion_velocity * car.max_vel:
+                            car.delete_self()
+                            break  
 
 
                         car.x, car.y = car.prev_x, car.prev_y
@@ -46,7 +45,7 @@ def check_collisions(car_indices, dynamic_gameobjects, spatial_grid, race_progre
                     if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
                         try:
                             current_progress = race_progress[0][car]
-                            if current_progress == self.race_lenght:
-                                self.game_over()
+                            if current_progress == race_lenght:
+                                return False
                         except:
                             pass
