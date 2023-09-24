@@ -25,28 +25,28 @@ class Game:
         self.renderer = Renderer(width, height)
         self.clock = pygame.time.Clock()
         map_handler =  MapHandler()
-
-        self.neat_core = NEATCore("D:\GritWorkshop\scripts\config-feedforward.txt")
-
-        self.running = True
         self.sprite_dictionary= SpriteDictionary.load_dicionary()
         self.spatial_grid = SpatialGrid(1536, 768, 96) #96x96 256x256 384x384 192x192
+        self.neat_core = NEATCore("D:\GritWorkshop\scripts\config-feedforward.txt")
 
-        self.static_gameobjects = []
-        self.dynamic_gameobjects = []
-        self.car_indices = []
-        self.race_progress = []  # starting from sequence 0 for the car
-        self.objects_to_remove = []
-        self.AI_AGENTS = []
 
-        self.TICK_RATE = 30
-        self.race_lenght = -1
+        self.static_gameobjects =   []
+        self.dynamic_gameobjects =  []
+        self.race_progress =        [] 
+        self.objects_to_remove =    []
+        self.AI_AGENTS =            []
+
+        self.TICK_RATE =         30
+        self.race_lenght =       -1
         self.render_skip_count = 10
-        self.current_skip = 0
-        self.game_state = "NORMAL"
+        self.current_skip =       0
+        self.game_state =   "NORMAL"
+        self.running =          True
+        self.timer =              0  
+        num_ai_cars =             50 
+
 
         self.generation = 0
-
         track_map = MapHandler.map_two()
         self.static_gameobjects.extend(map_handler.generate_track(track_map, 96, sprite_dictionary=self.sprite_dictionary))
         map_handler.generate_track_sequence(track_map["map_layout"], self.static_gameobjects)
@@ -54,22 +54,14 @@ class Game:
 
         for obj in self.static_gameobjects:
             self.spatial_grid.insert(obj)
-        # Finish line addition
         self.finish_line = self.get_finish_line()
         self.register_gameobject(self.finish_line)
-
-        self.timer = 0  # timer in seconds
-
-            # Generate AI controlled cars
-        num_ai_cars = 50  # or any number you want
         self.spawn_ai_cars(num_ai_cars)
-
         self.race_progress_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 50))
         self.timer_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 75))
         self.renderer.text_objects.extend([self.race_progress_text, self.timer_text])
         self.fps_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 100))
         self.renderer.text_objects.extend([self.fps_text])
-
         self.simulate_button = Button(100, 10, 100, 40, "SIMULATE", self.simulate)
         self.normal_button = Button(220, 10, 100, 40, "NORMAL", self.normal)
         self.buttons = [self.simulate_button, self.normal_button]
@@ -85,7 +77,7 @@ class Game:
             elapsed_time = logical_ticks / max(NORMAL_TICKS_PER_SECOND, 1)  
             self.timer += elapsed_time
             self.handle_events()
-            if len(self.car_indices) == 0:
+            if len(self.dynamic_gameobjects) == 0:
                 self.game_over()
 
             #self.check_stop_condition()
@@ -113,7 +105,7 @@ class Game:
             else:
                 self.render_game(current_fps)
 
-            if CollisionManager.check_collisions(self.car_indices, self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
+            if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
                 self.game_over()
 
             self.clock.tick(self.TICK_RATE)
@@ -125,7 +117,6 @@ class Game:
 
         # If less than 10% of cars have increased their race_progress in the last 5 seconds
         if self.timer >= 5.0 and cars_that_progressed < total_cars * 0.1:
-            # Here, you can end the episode early if needed
             print("RESETING DUE TO NO PROGRESS")
             self.reset_game_state()
 
@@ -172,7 +163,6 @@ class Game:
 
             self.register_gameobject(ai_car)
             self.dynamic_gameobjects.append(ai_car)
-            self.car_indices.append(len(self.dynamic_gameobjects) - 1)
             self.race_progress.append({ai_car: 0})  # starting from sequence 0 for each car
 
     def get_finish_line(self):
@@ -196,34 +186,18 @@ class Game:
             index = self.dynamic_gameobjects.index(gameobject)
             self.dynamic_gameobjects.remove(gameobject)
             
-            if isinstance(gameobject, Car):
-                if index in self.car_indices:
-                    self.car_indices.remove(index)
-                    for i in range(len(self.car_indices)):
-                        if self.car_indices[i] > index:
-                            self.car_indices[i] -= 1
 
     def reset_game_state(self):        
-        for idx in self.car_indices:
-            car = self.dynamic_gameobjects[idx]  # Accessing Car object using index from car_indices
-            agent = car.ai_agent
-            progress = self.race_progress[idx][car]  # Assuming race_progress stores progress as {car: progress}
-            reward = progress / self.race_lenght
-            agent.genome.fitness = reward  # Assign the reward as fitness
-
-
-        # Reset the timer
         self.timer = 0
-        
-        # Remove all dynamic game objects and AI cars
-        for idx in self.car_indices:
-            car = self.dynamic_gameobjects[idx]
+        for x in range(len(self.dynamic_gameobjects)):
+            if x >= len(self.dynamic_gameobjects):
+                break
+            car = self.dynamic_gameobjects[x]
             # Here, we're assuming there's a method to destroy or deregister cars. 
             # You might need to adapt this to your actual method of destroying game objects.
             self.remove_gameobject(car)
             #self.deregister_gameobject(car)
         self.dynamic_gameobjects.clear()
-        self.car_indices.clear()
 
         # Reset race progress
         self.race_progress = []

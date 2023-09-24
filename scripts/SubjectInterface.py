@@ -10,10 +10,7 @@ class SubjectInterface:
 
     def notify_remove_gameobject(self):
         for observer in self._observers:
-            observer.remove_gameobject(self)
+            observer.mark_for_removal(self)
 
-    def notify_add_gameobject(self,obj):
-        for observer in self._observers:
-            observer.register_gameobject(obj)
 
             

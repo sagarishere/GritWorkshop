@@ -8,9 +8,10 @@ from FinishLine import FinishLine
 import time
 
 
-def check_collisions(car_indices, dynamic_gameobjects, spatial_grid, race_progress, race_lenght):
-        for idx in car_indices:
-            car = dynamic_gameobjects[idx]
+def check_collisions(dynamic_gameobjects, spatial_grid, race_progress, race_lenght):
+        
+        for x in range(len(dynamic_gameobjects)):
+            car = dynamic_gameobjects[x]
             neighboring_objects = spatial_grid.get_neighboring_objects(car.x, car.y)
             
             for obj in neighboring_objects:
