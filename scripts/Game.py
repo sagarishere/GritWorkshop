@@ -43,6 +43,7 @@ class Game:
         self.running =          True 
         self.timer =              0  
         self.num_ai_cars =        20
+        self.agent_compound_reward = {}
 
 
         self.generation = 0
@@ -95,17 +96,11 @@ class Game:
                 if isinstance(self.dynamic_gameobjects[x], Car) and hasattr(self.dynamic_gameobjects[x], 'ai_agent'):
                     obj = self.dynamic_gameobjects[x]
                     
-                    # Calculate start and end indices for the car's distances in the car_distances list
                     start_idx = x * ray_angle_count
                     end_idx = start_idx + ray_angle_count
                     
                     car_specific_distances = car_distances[start_idx:end_idx]
                     car_specific_distances = self.normalize(car_specific_distances)
-                    # Set inputs for the agent
-
-                    #car_max_velocity
-                    #height and width
-                    #angle
                     normalized_x = obj.x / self.width
                     normalized_y = obj.y / self.height
                     normalized_angle = obj.angle / 360  # assuming angle is in degrees
@@ -251,6 +246,7 @@ class Game:
     def reset_game_state(self, agents):        
         self.timer = 0
         self.all_agents.clear()
+        self.agent_compound_reward = {}
         for x in range(len(self.dynamic_gameobjects)):
             if x >= len(self.dynamic_gameobjects):
                 break
