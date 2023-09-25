@@ -1,6 +1,6 @@
 import pygame
 class Line:
-    def __init__(self, start, end, color=(255, 0, 0), width=1):
+    def __init__(self, start, end, color=(255, 0, 0), width=0.2):
         """
         Initialize a line object.
         

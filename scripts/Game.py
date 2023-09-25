@@ -29,7 +29,7 @@ class Game:
         self.clock = pygame.time.Clock()
         map_handler =  MapHandler()
         self.sprite_dictionary= SpriteDictionary.load_dicionary()
-        self.spatial_grid = SpatialGrid(1536, 768, 96) #96x96 256x256 384x384 192x192
+        self.spatial_grid = SpatialGrid(1536, 768, 48) #96x96 256x256 384x384 192x192
         self.raycast_manager = RaycastManager(self.spatial_grid)
 
         self.static_gameobjects =   []
@@ -39,7 +39,7 @@ class Game:
         self.AI_AGENTS =            []
         self.line_objects =         []
         
- 
+        self.car_ray_angles = [0, 45, -45, 90, -90]
 
 
 
@@ -50,7 +50,7 @@ class Game:
         self.game_state =   "NORMAL"
         self.running =          True
         self.timer =              0  
-        self.num_ai_cars =        1 
+        self.num_ai_cars =        1
 
 
         self.generation = 0
@@ -107,7 +107,7 @@ class Game:
             self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
 
-            car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects)
+            car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects, self.car_ray_angles)
             #print(ray_data)
 
             for x in range(len(self.line_objects)):
@@ -189,7 +189,10 @@ class Game:
             self.register_gameobject(ai_car)
             self.dynamic_gameobjects.append(ai_car)
             self.race_progress.append({ai_car: 0})  # starting from sequence 0 for each car
-            self.line_objects.append(Line(start=(0,0), end=(300,300),width=5))
+
+
+            for x in range(len(self.car_ray_angles)):
+                self.line_objects.append(Line(start=(0,0), end=(300,300),width=1))
 
     def get_finish_line(self):
         # This function should now loop over static_gameobjects
@@ -210,9 +213,15 @@ class Game:
         # Update this function to remove from dynamic_gameobjects
         if gameobject in self.dynamic_gameobjects:
             index = self.dynamic_gameobjects.index(gameobject)
-            if type(gameobject) == Car:
-                self.line_objects.pop(index)
             self.dynamic_gameobjects.remove(gameobject)
+
+            # If the game object is a car, remove its associated ray angles
+            if type(gameobject) == Car:
+                # Reverse the loop to pop from the end to the beginning (to avoid index shifts)
+                for _ in range(len(self.car_ray_angles)):
+                    # Only pop if the index is valid
+                    if index < len(self.line_objects):  
+                        self.line_objects.pop(index)
 
 
     def reset_game_state(self):        

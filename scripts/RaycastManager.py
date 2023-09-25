@@ -7,7 +7,7 @@ class RaycastManager:
         self.spatial_grid = spatial_grid
         self.max_ray_distance = 1000
     
-    def cast_rays_for_cars(self, game_objects):
+    def cast_rays_for_cars(self, game_objects, ray_angles):
         distances = []
         ray_positions = []
 
@@ -18,20 +18,24 @@ class RaycastManager:
 
                 # Adjust start_pos to be the center of the sprite rect
                 start_pos = (obj.x + sprite_width / 2, obj.y + sprite_height / 2)
-                direction_angle = obj.angle + 90  # Adjust for the offset
-                direction_angle %= 360  # Ensure the angle is between 0 and 360
-                
-                # Convert angle to direction vector
-                dx = math.cos(math.radians(direction_angle))
-                dy = -math.sin(math.radians(direction_angle))
-                
-                distance = self.cast_ray(start_pos, (dx, dy), self.max_ray_distance)
-            
-                # Calculate the end position of the ray based on the distance
-                end_x = start_pos[0] + dx * distance
-                end_y = start_pos[1] + dy * distance
-                ray_positions.append((start_pos, (end_x, end_y)))
+                base_angle = obj.angle + 90  # the forward direction of the car
 
+                for offset_angle in ray_angles:
+                    direction_angle = base_angle + offset_angle
+                    direction_angle %= 360
+
+
+                    # Convert angle to direction vector
+                    dx = math.cos(math.radians(direction_angle))
+                    dy = -math.sin(math.radians(direction_angle))
+                    
+                    distance = self.cast_ray(start_pos, (dx, dy), self.max_ray_distance)
+                
+                    end_x = obj.x + dx * distance
+                    end_y = obj.y + dy * distance
+                    ray_positions.append((start_pos, (end_x, end_y)))
+
+                    distances.append(distance)
         return distances, ray_positions
     
 
@@ -43,7 +47,7 @@ class RaycastManager:
         x, y = start_pos
         dx, dy = direction
         
-        step_size = 1
+        step_size = 24
         num_steps = int(max_distance / step_size)
 
         for step in range(num_steps):
