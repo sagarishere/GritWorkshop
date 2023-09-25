@@ -66,7 +66,7 @@ class NEATCore:
           #  print("GENOM ID: ", genome_id)
             agent_specific_data = game_data.get(genome_id)
             if agent_specific_data is not None:  # Ensure data was found for the agent
-                agent_fitness = self.target_function.compute_fitness(agent_specific_data)
+                agent_fitness = self.target_function.compute_fitness(agent_specific_data,genome_id)
                 genome.fitness = agent_fitness
             else:
                 print(f"Warning: No game data found for genome ID {genome_id}")

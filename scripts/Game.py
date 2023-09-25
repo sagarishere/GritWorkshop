@@ -44,7 +44,6 @@ class Game:
         self.running =          True 
         self.timer =              0  
         self.num_ai_cars =        20
-        self.agent_compound_reward = {}
 
 
         self.generation = 0
@@ -102,7 +101,7 @@ class Game:
                     end_idx = start_idx + ray_angle_count
                     
                     car_specific_distances = car_distances[start_idx:end_idx]
-                    car_specific_distances = self.normalize(car_specific_distances)
+                    #car_specific_distances = self.normalize(car_specific_distances)
                     normalized_x = obj.x / self.width
                     normalized_y = obj.y / self.height
                     normalized_angle = obj.angle / 360  # assuming angle is in degrees
@@ -129,7 +128,7 @@ class Game:
                 obj = self.dynamic_gameobjects[x]
                 if isinstance(obj, Car) and hasattr(obj, 'ai_agent'):
                     obj = obj
-                    target_function.add_runtime_fitness(obj.x, obj.y, obj.angle, obj.vel, obj.max_vel, obj.ai_agent, self.agent_compound_reward)
+                    target_function.add_runtime_fitness(obj.x, obj.y, obj.angle, obj.vel, obj.max_vel, obj.ai_agent)
 
             if self.game_state == "SIMULATE":
                 self.current_skip += 1
@@ -256,7 +255,6 @@ class Game:
     def reset_game_state(self, agents):        
         self.timer = 0
         self.all_agents.clear()
-        self.agent_compound_reward = {}
         for x in range(len(self.dynamic_gameobjects)):
             if x >= len(self.dynamic_gameobjects):
                 break
