@@ -17,3 +17,8 @@ class Line:
     def draw(self, surface):
         """Draw the line on the provided surface."""
         pygame.draw.line(surface, self.color, self.start, self.end, self.width)
+
+
+    def SetLine(self, start, end):
+        self.start = start
+        self.end = end        

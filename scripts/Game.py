@@ -106,16 +106,20 @@ class Game:
 
             self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
+
+            car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects)
+            #print(ray_data)
+
+            for x in range(len(self.line_objects)):
+                self.line_objects[x].SetLine(ray_data[x][0], ray_data[x][1]) 
+
             if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
                 self.game_over()
                 self.running = False
 
-            car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects)
-            for i, (start, end) in enumerate(ray_data):
-                print(start,end)
-                line_obj = self.line_objects[i]
-                line_obj.start_pos = start
-                line_obj.end_pos = end
+
+
+
 
             if self.game_state == "SIMULATE":
                 self.current_skip += 1
@@ -175,7 +179,7 @@ class Game:
     def spawn_ai_cars(self, num_cars):
         car_sprite = Sprite("assets/car1.png")
         for _ in range(num_cars):
-            ai_car = Car(self.finish_line.x, self.finish_line.y, car_sprite, max_vel=20, rotation_vel=5, angle=270, car_explosion_velocity=0.00001 ,AI_CONTROLLED=True)
+            ai_car = Car(self.finish_line.x+ 48, self.finish_line.y + 48, car_sprite, max_vel=20, rotation_vel=5, angle=270, car_explosion_velocity=0.00001 ,AI_CONTROLLED=True)
 
             genome = self.neat_core.get_new_genome()
             agent = AI_AGENT(genome, self.neat_core.config)
@@ -206,8 +210,11 @@ class Game:
         # Update this function to remove from dynamic_gameobjects
         if gameobject in self.dynamic_gameobjects:
             index = self.dynamic_gameobjects.index(gameobject)
+            if type(gameobject) == Car:
+                self.line_objects.pop(index)
             self.dynamic_gameobjects.remove(gameobject)
-            
+
+
     def reset_game_state(self):        
         self.timer = 0
         for x in range(len(self.dynamic_gameobjects)):

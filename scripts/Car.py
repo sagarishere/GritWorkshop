@@ -103,8 +103,6 @@ class Car(GameObject):
         self.y = min(max(self.y, 0), HEIGHT - self.rect.height)
 
 
-    
-
 
 
         # def create_explosion(self, x, y):

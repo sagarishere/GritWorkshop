@@ -53,7 +53,6 @@ class Renderer:
         """Draw all line objects."""
         for line_obj in lines:
             line_obj.draw(self.screen)
-            print(line_obj.end)
         pygame.display.flip()
 
     def RenderAllTextObjects(self):
