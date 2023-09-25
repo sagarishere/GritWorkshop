@@ -18,8 +18,6 @@ class TargetFunction:
             progress_ratio = race_progress / race_length
             fitness = 1000 * progress_ratio 
         
-
-
         #This needs to stay
         return fitness + self.agent_compound_reward[genome_id]
 
@@ -31,12 +29,14 @@ class TargetFunction:
         max_vel = car_data["max_vel"]
         agent = car_data["agent"]
         collision_status = car_data["collision"]
+        elapsed_time = car_data["elapsed_time"]
+
 
         normalized_vel = vel / max_vel
         speed_reward = normalized_vel * 0.05
 
         if collision_status == 1:  # Wall collision
-            speed_reward -= 50
+            speed_reward -= 1
         elif collision_status == -1:  # Explosion
             speed_reward -= 100
 

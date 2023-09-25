@@ -133,7 +133,8 @@ class Game:
                         "vel": obj.vel,
                         "max_vel": obj.max_vel,
                         "agent": obj.ai_agent,
-                        "collision": collision_status
+                        "collision": collision_status,
+                        "elapsed_time":self.timer
                     }
 
                     target_function.add_runtime_fitness(car_data)
@@ -243,7 +244,7 @@ class Game:
     def spawn_ai_cars(self, agents):
         car_sprite = Sprite("assets/car1.png")
         for agent in agents:
-            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=5, angle=270, car_explosion_velocity=0.00001, AI_CONTROLLED=True)
+            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=5, angle=270, car_explosion_velocity=0.2, AI_CONTROLLED=True)
 
             ai_car.set_ai_agent_controller(agent)  # Assign the agent to the car
 

@@ -57,7 +57,9 @@ class RaycastManager:
 
                 # Check if ray position is outside of the screen bounds
                 if x < 0 or x > width or y < 0 or y > height:
-                    break
+                    # Compute distance from start_pos to the edge of the screen
+                    distance_to_edge = ((x - start_pos[0])**2 + (y - start_pos[1])**2)**0.5
+                    return distance_to_edge
 
                 nearby_walls = self.spatial_grid.get_neighboring_objects(x, y)
 
@@ -65,7 +67,6 @@ class RaycastManager:
                     if isinstance(wall, Wall) and wall.get_rect().collidepoint(ray_pos):  # Check type and then collision
                         # Compute distance from start_pos to collision point
                         distance = ((x - start_pos[0])**2 + (y - start_pos[1])**2)**0.5
-                        #print(f"Collision detected with Wall at step {step}")
                         return distance
 
             return max_distance
