@@ -87,7 +87,7 @@ class Game:
 
             #self.check_stop_condition()
 
-            if self.timer > 2:
+            if self.timer > 30:
                 return self.collect_game_data()
 
             car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects, self.car_ray_angles, self.width, self.height)
@@ -106,7 +106,7 @@ class Game:
                     end_idx = start_idx + ray_angle_count
                     
                     car_specific_distances = car_distances[start_idx:end_idx]
-                    
+                    car_specific_distances = self.normalize(car_specific_distances)
                     # Set inputs for the agent
                     inputs = [obj.x, obj.y, obj.angle, obj.vel] + car_specific_distances
                     obj.ai_agent.AI_INPUT(inputs)
@@ -144,6 +144,16 @@ class Game:
             print("RESETING DUE TO NO PROGRESS")
             self.reset_game_state()
 
+
+    def normalize(self, array):
+        min_val = min(array)
+        max_val = max(array)
+        
+        # Check for division by zero and handle the special case
+        if max_val == min_val:
+            return [0.5 for _ in array]
+        
+        return [(val - min_val) / (max_val - min_val) for val in array]
     def render_game(self, current_fps):
         # Calculate and display the FPS
         self.fps_text.update_text(f"FPS: {current_fps:.2f}", self.renderer.width, self.renderer.height)
@@ -248,11 +258,11 @@ class Game:
         data = {}
         for x in range(len(self.all_agents)):
             obj = self.all_agents[x]
-            print(x)
             if isinstance(obj, Car) and hasattr(obj, 'ai_agent'):
                 genome_id = obj.ai_agent.genome_id
                 data[genome_id] = {
-                    'race_progress': self.race_progress.get(obj, 0)
+                    'race_progress': self.race_progress.get(obj, 0),
+                    'race_lenght':self.race_lenght
                 }
         return data
 
