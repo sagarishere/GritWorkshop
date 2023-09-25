@@ -15,7 +15,6 @@ import CollisionManager
 import SpriteDictionary
 from TemporaryObj import TemporaryObj
 import random
-from TARGET_FUNCTION import compute_fitness
 from Line import Line
 from RaycastManager import RaycastManager
 class Game:
@@ -34,14 +33,12 @@ class Game:
 
         self.static_gameobjects =   []
         self.dynamic_gameobjects =  []
-        self.race_progress =        [] 
+        self.race_progress =        {} 
         self.objects_to_remove =    []
         self.AI_AGENTS =            []
         self.line_objects =         []
-        
+        self.all_agents =           []
         self.car_ray_angles = [0, 45, -45, 90, -90]
-
-
 
         self.TICK_RATE =         30
         self.race_lenght =       -1
@@ -63,7 +60,7 @@ class Game:
             self.spatial_grid.insert(obj)
         self.finish_line = self.get_finish_line()
         self.register_gameobject(self.finish_line)
-        self.spawn_ai_cars(self.num_ai_cars)
+        #self.spawn_ai_cars(self.num_ai_cars)
         self.race_progress_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 50))
         self.timer_text = self.renderer.TextObject(font_size=24, font_color=(255, 255, 0), pos=(50, 75))
         self.renderer.text_objects.extend([self.race_progress_text, self.timer_text])
@@ -75,9 +72,9 @@ class Game:
 
         print("Init done..")
 
-    def run(self, agent):
+    def run(self, agents):
         NORMAL_TICKS_PER_SECOND = 30 
-
+        self.reset_game_state(agents)
         while self.running:
             current_fps = self.clock.get_fps()
             logical_ticks = current_fps / NORMAL_TICKS_PER_SECOND
@@ -90,9 +87,8 @@ class Game:
 
             #self.check_stop_condition()
 
-            if self.timer > 10:
-                fitness_value = compute_fitness(self.collect_game_data())
-                return {'fitness': fitness_value}
+            if self.timer > 2:
+                return self.collect_game_data()
 
             car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects, self.car_ray_angles, self.width, self.height)
 
@@ -122,16 +118,9 @@ class Game:
 
             self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
-
-
-
             if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
                 self.game_over()
                 self.running = False
-
-
-
-
 
             if self.game_state == "SIMULATE":
                 self.current_skip += 1
@@ -143,9 +132,7 @@ class Game:
 
             self.clock.tick(self.TICK_RATE)
 
-        fitness_value = compute_fitness(self.collect_game_data())
-        self.reset_game_state()
-        return {'fitness': fitness_value}
+        return self.collect_game_data()
 
     def check_stop_condition(self):
         # Check progress and assign rewards
@@ -188,23 +175,21 @@ class Game:
         if game_object not in self.objects_to_remove:
             self.objects_to_remove.append(game_object)
 
-    def spawn_ai_cars(self, num_cars):
+    def spawn_ai_cars(self, agents):
         car_sprite = Sprite("assets/car1.png")
-        for _ in range(num_cars):
-            ai_car = Car(self.finish_line.x+ 48, self.finish_line.y + 48, car_sprite, max_vel=20, rotation_vel=5, angle=270, car_explosion_velocity=0.00001 ,AI_CONTROLLED=True)
+        for agent in agents:
+            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, max_vel=20, rotation_vel=5, angle=270, car_explosion_velocity=0.00001, AI_CONTROLLED=True)
 
-            genome = self.neat_core.get_new_genome()
-            agent = AI_AGENT(genome, self.neat_core.config)
-            self.AI_AGENTS.append(agent)
-            ai_car.set_ai_agent_controller(agent)
+            ai_car.set_ai_agent_controller(agent)  # Assign the agent to the car
 
             self.register_gameobject(ai_car)
             self.dynamic_gameobjects.append(ai_car)
-            self.race_progress.append({ai_car: 0})  # starting from sequence 0 for each car
+            self.all_agents.append(ai_car)  # Continue to store a reference to the car in all_agents
+            self.race_progress[ai_car] = 0
 
+            for _ in range(len(self.car_ray_angles)):
+                self.line_objects.append(Line(start=(0, 0), end=(300, 300), width=1))
 
-            for x in range(len(self.car_ray_angles)):
-                self.line_objects.append(Line(start=(0,0), end=(300,300),width=1))
 
     def get_finish_line(self):
         # This function should now loop over static_gameobjects
@@ -235,52 +220,40 @@ class Game:
                     if index < len(self.line_objects):  
                         self.line_objects.pop(index)
 
-
-    def reset_game_state(self):        
+    def reset_game_state(self, agents):        
         self.timer = 0
+        self.all_agents.clear()
         for x in range(len(self.dynamic_gameobjects)):
             if x >= len(self.dynamic_gameobjects):
                 break
             car = self.dynamic_gameobjects[x]
-            # Here, we're assuming there's a method to destroy or deregister cars. 
-            # You might need to adapt this to your actual method of destroying game objects.
             self.remove_gameobject(car)
-            #self.deregister_gameobject(car)
+
         self.dynamic_gameobjects.clear()
         self.line_objects.clear()
 
-        # Reset race progress
-        self.race_progress = []
+        self.race_progress = {}
         
-        # Reset texts
         self.race_progress_text.update_text("", self.renderer.width, self.renderer.height)
         self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
         self.fps_text.update_text("", self.renderer.width, self.renderer.height)
         
-        
-        self.spawn_ai_cars(self.num_ai_cars)
-        
-        # Reset game state
-        #self.game_state = "NORMAL"
-        
-        # Clean up any other leftover states or attributes
+        self.spawn_ai_cars(agents)
         self.objects_to_remove.clear()
         self.current_skip = 0
-        #print("Game state reset complete, generation:", self.generation)
         self.generation += 1
         self.running = True
 
     def collect_game_data(self):
-        """
-        Collects and returns game-related data in a dictionary format. 
-        This data will be used by the target function to compute the fitness.
-        """
-        data = {
-            # Example:
-            # 'distance_traveled': self.distance,
-            # 'collisions': self.collisions_count,
-            # ...
-        }
+        data = {}
+        for x in range(len(self.all_agents)):
+            obj = self.all_agents[x]
+            print(x)
+            if isinstance(obj, Car) and hasattr(obj, 'ai_agent'):
+                genome_id = obj.ai_agent.genome_id
+                data[genome_id] = {
+                    'race_progress': self.race_progress.get(obj, 0)
+                }
         return data
 
 

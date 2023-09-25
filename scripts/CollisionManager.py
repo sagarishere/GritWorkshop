@@ -36,17 +36,13 @@ def check_collisions(dynamic_gameobjects, spatial_grid, race_progress, race_leng
 
                 elif isinstance(obj, Track):
                     if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
-                        try:
-                            expected_sequence = race_progress[0][car]
-                            if obj.sequence_number == expected_sequence + 1:
-                                race_progress[0][car] = obj.sequence_number
-                        except:
-                            pass
+                        expected_sequence = race_progress.get(car, 0)
+                        if obj.sequence_number == expected_sequence + 1:
+                           # print("ADDING RACE PROGRESS")
+                            race_progress[car] = obj.sequence_number
+
                 elif isinstance(obj, FinishLine):
                     if car.sprite.get_rect(topleft=(car.x, car.y)).colliderect(obj.sprite.get_rect(topleft=(obj.x, obj.y))):
-                        try:
-                            current_progress = race_progress[0][car]
-                            if current_progress == race_lenght:
-                                return False
-                        except:
-                            pass
+                        current_progress = race_progress.get(car, 0)
+                        if current_progress == race_lenght:
+                            return False

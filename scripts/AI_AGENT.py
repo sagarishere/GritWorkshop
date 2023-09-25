@@ -3,6 +3,7 @@ import neat.nn
 class AI_AGENT:
     def __init__(self, genome, config):
         self.genome = genome
+        self.genome_id = genome.key  # Assuming genome has a unique key attribute
         self.network = neat.nn.FeedForwardNetwork.create(genome, config)
         self.inputs = []
     

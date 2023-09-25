@@ -2,6 +2,7 @@ import neat
 import random
 from Game import Game
 from AI_AGENT import AI_AGENT
+import TARGET_FUNCTION 
 
 class NEATCore:
     def __init__(self, config_path):
@@ -31,9 +32,10 @@ class NEATCore:
         for generation in range(generations):
             # Evaluate the current generation's genomes
             self.population.run(self.evaluate_genomes, 1)  # Run for 1 generation
-
             # After all agents in this generation have been evaluated, reset the game state
-            self.game.reset_game_state()
+          #  self.game.reset_game_state()
+
+
         self.print_statistics()
     
     def print_statistics(self):
@@ -45,11 +47,36 @@ class NEATCore:
         species_stats = self.stats_reporter.get_species_sizes()
         print(f"Species counts: {species_stats}")
 
+    def create_agent(self):
+        genome = self.get_new_genome()  # I'm assuming this is how you get a new genome
+        agent = AI_AGENT(genome, self.config)
+        return agent
+
     def evaluate_genomes(self, genomes, config):
+        # Step 1: Create agents for all genomes
+        agents = []
         for genome_id, genome in genomes:
             agent = AI_AGENT(genome, config)
-            game_result = self.game.run(agent)
-            genome.fitness = game_result['fitness']
+            agents.append(agent)
+
+        # Step 2: Run the game with all agents
+        game_data = self.game.run(agents)
+
+        #print(f"Number of genomes: {len(genomes)}")
+        #print(f"Number of agents created: {len(agents)}")
+
+        # Step 3: Compute and assign fitness for each agent/genome
+
+        print(game_data)
+        for idx, (genome_id, genome) in enumerate(genomes):
+          #  print("GENOM ID: ", genome_id)
+            agent_specific_data = game_data.get(genome_id)
+            if agent_specific_data is not None:  # Ensure data was found for the agent
+                agent_fitness = TARGET_FUNCTION.compute_fitness(agent_specific_data)
+                genome.fitness = agent_fitness
+            else:
+                print(f"Warning: No game data found for genome ID {genome_id}")
+
 
     def set_game(self, game):
         self.game = game
