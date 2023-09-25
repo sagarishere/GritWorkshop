@@ -28,7 +28,8 @@ class Car(GameObject):
                 'left': ai_output[0] > self.input_threshold,
                 'right': ai_output[1] > self.input_threshold,
                 'forward': ai_output[2] > self.input_threshold,
-                'brake': ai_output[3] > self.input_threshold
+                'reverse': ai_output[3] > self.input_threshold,  # Reverse movement
+                'brake': ai_output[4] > self.input_threshold  # Moved brake to the last index
             }
         else:
             keys = pygame.key.get_pressed()
@@ -36,11 +37,17 @@ class Car(GameObject):
                 'left': keys[pygame.K_a],
                 'right': keys[pygame.K_d],
                 'forward': keys[pygame.K_w],
-                'brake': keys[pygame.K_s]
+                'reverse': keys[pygame.K_s],  # Reverse movement
+                'brake': keys[pygame.K_SPACE]  # Changed brake to SPACE for clarity
             }
         
     def set_ai_agent_controller(self, agent):
         self.ai_agent = agent
+
+    def move_reverse(self):
+        reverse_speed = self.max_vel * 0.3
+        self.vel = max(self.vel - self.acceleration, -reverse_speed)
+        self.move()
 
     def handle_input(self):
         input_data = self.get_input()
@@ -49,8 +56,10 @@ class Car(GameObject):
             self.rotate(left=True)
         if input_data['right']:
             self.rotate(right=True)
-        if input_data['forward']:
+        if input_data['forward'] and not input_data['reverse']:
             self.move_forward()
+        elif input_data['reverse'] and not input_data['forward']:
+            self.move_reverse()
         elif input_data['brake']:  # Brake functionality
             self.brake()
         else:

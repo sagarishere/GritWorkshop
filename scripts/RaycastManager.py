@@ -7,7 +7,7 @@ class RaycastManager:
         self.spatial_grid = spatial_grid
         self.max_ray_distance = 1000
     
-    def cast_rays_for_cars(self, game_objects, ray_angles):
+    def cast_rays_for_cars(self, game_objects, ray_angles, width, height):
         distances = []
         ray_positions = []
 
@@ -29,7 +29,7 @@ class RaycastManager:
                     dx = math.cos(math.radians(direction_angle))
                     dy = -math.sin(math.radians(direction_angle))
                     
-                    distance = self.cast_ray(start_pos, (dx, dy), self.max_ray_distance)
+                    distance = self.cast_ray(start_pos, (dx, dy), self.max_ray_distance, width, height)
                 
                     end_x = obj.x + dx * distance
                     end_y = obj.y + dy * distance
@@ -39,29 +39,33 @@ class RaycastManager:
         return distances, ray_positions
     
 
-    def cast_ray(self, start_pos, direction, max_distance):
-        """ 
-        This is the cast_ray function we've discussed before. 
-        It uses the spatial grid for optimized raycasting.
-        """
-        x, y = start_pos
-        dx, dy = direction
-        
-        step_size = 24
-        num_steps = int(max_distance / step_size)
+    def cast_ray(self, start_pos, direction, max_distance, width, height):
+            """ 
+            This is the cast_ray function we've discussed before. 
+            It uses the spatial grid for optimized raycasting.
+            """
+            x, y = start_pos
+            dx, dy = direction
+            
+            step_size = 24
+            num_steps = int(max_distance / step_size)
 
-        for step in range(num_steps):
-            x += dx * step_size
-            y += dy * step_size
-            ray_pos = (x, y)
+            for step in range(num_steps):
+                x += dx * step_size
+                y += dy * step_size
+                ray_pos = (x, y)
 
-            nearby_walls = self.spatial_grid.get_neighboring_objects(x, y)
+                # Check if ray position is outside of the screen bounds
+                if x < 0 or x > width or y < 0 or y > height:
+                    break
 
-            for wall in nearby_walls:
-                if isinstance(wall, Wall) and wall.get_rect().collidepoint(ray_pos):  # Check type and then collision
-                    # Compute distance from start_pos to collision point
-                    distance = ((x - start_pos[0])**2 + (y - start_pos[1])**2)**0.5
-                    #print(f"Collision detected with Wall at step {step}")
-                    return distance
+                nearby_walls = self.spatial_grid.get_neighboring_objects(x, y)
 
-        return max_distance
+                for wall in nearby_walls:
+                    if isinstance(wall, Wall) and wall.get_rect().collidepoint(ray_pos):  # Check type and then collision
+                        # Compute distance from start_pos to collision point
+                        distance = ((x - start_pos[0])**2 + (y - start_pos[1])**2)**0.5
+                        #print(f"Collision detected with Wall at step {step}")
+                        return distance
+
+            return max_distance

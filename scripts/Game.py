@@ -23,9 +23,9 @@ class Game:
     def __init__(self, neat_core):
         self.neat_core = neat_core
         # Setting up the renderer
-        width = 1536
-        height = 768
-        self.renderer = Renderer(width, height)
+        self.width = 1536
+        self.height = 768
+        self.renderer = Renderer(self.width, self.height)
         self.clock = pygame.time.Clock()
         map_handler =  MapHandler()
         self.sprite_dictionary= SpriteDictionary.load_dicionary()
@@ -50,7 +50,7 @@ class Game:
         self.game_state =   "NORMAL"
         self.running =          True
         self.timer =              0  
-        self.num_ai_cars =        1
+        self.num_ai_cars =        20
 
 
         self.generation = 0
@@ -90,15 +90,31 @@ class Game:
 
             #self.check_stop_condition()
 
-            if self.timer > 2:
+            if self.timer > 10:
                 fitness_value = compute_fitness(self.collect_game_data())
                 return {'fitness': fitness_value}
+
+            car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects, self.car_ray_angles, self.width, self.height)
+
+            for x in range(len(self.line_objects)):
+                self.line_objects[x].SetLine(ray_data[x][0], ray_data[x][1]) 
+
+            ray_angle_count = len(self.car_ray_angles)
 
             for x in range(len(self.dynamic_gameobjects)):
                 if isinstance(self.dynamic_gameobjects[x], Car) and hasattr(self.dynamic_gameobjects[x], 'ai_agent'):
                     obj = self.dynamic_gameobjects[x]
+                    
+                    # Calculate start and end indices for the car's distances in the car_distances list
+                    start_idx = x * ray_angle_count
+                    end_idx = start_idx + ray_angle_count
+                    
+                    car_specific_distances = car_distances[start_idx:end_idx]
+                    
                     # Set inputs for the agent
-                    obj.ai_agent.AI_INPUT([obj.x, obj.y, obj.angle, obj.vel])
+                    inputs = [obj.x, obj.y, obj.angle, obj.vel] + car_specific_distances
+                    obj.ai_agent.AI_INPUT(inputs)
+                
                 self.dynamic_gameobjects[x].update()
 
             self.cleanup_destroyed_objects()
@@ -107,11 +123,7 @@ class Game:
             self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
 
-            car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects, self.car_ray_angles)
-            #print(ray_data)
 
-            for x in range(len(self.line_objects)):
-                self.line_objects[x].SetLine(ray_data[x][0], ray_data[x][1]) 
 
             if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
                 self.game_over()
