@@ -146,24 +146,47 @@ class Game:
         # Track the time since the last movement was detected
         if not hasattr(self, "last_movement_time"):
             self.last_movement_time = None
-        
+
+        # Track the last position of each car
+        if not hasattr(self, "last_car_positions"):
+            self.last_car_positions = dict()
+
         current_time = time.time()
 
         # If there are no dynamic game objects left
         if not self.dynamic_gameobjects:
             return True
 
-        # Check if any car has a velocity not close to zero (i.e., it's moving)
+        significant_movement_detected = False
+
+        # Check if any car has a velocity not close to zero or has moved significantly
         for obj in self.dynamic_gameobjects:
-            if isinstance(obj, Car) and abs(obj.vel) > 0.5:
-                self.last_movement_time = current_time
-                return False  # There's at least one car with noticeable movement, so don't stop
+            if isinstance(obj, Car):
+                # Check velocity
+                if abs(obj.vel) > 0.5:
+                    self.last_movement_time = current_time
+                    self.last_car_positions[obj] = (obj.x, obj.y)  # update last known position
+                    significant_movement_detected = True
+                    break
+
+                # Check movement on x and y axis
+                last_position = self.last_car_positions.get(obj)
+                if last_position:
+                    distance_moved = ((obj.x - last_position[0]) ** 2 + (obj.y - last_position[1]) ** 2) ** 0.5
+                    if distance_moved > 5:
+                        self.last_movement_time = current_time
+                        self.last_car_positions[obj] = (obj.x, obj.y)  # update last known position
+                        significant_movement_detected = True
+                        break
+                else:
+                    self.last_car_positions[obj] = (obj.x, obj.y)  # initialize if not present
         
-        # If no movement has been detected for a second, trigger the stop condition
-        if self.last_movement_time and current_time - self.last_movement_time > 1.0:
+        # If no significant movement has been detected for a second, trigger the stop condition
+        if not significant_movement_detected and self.last_movement_time and current_time - self.last_movement_time > 1.0:
             return True
 
         return False
+
 
 
 

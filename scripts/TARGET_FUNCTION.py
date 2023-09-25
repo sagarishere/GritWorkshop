@@ -13,12 +13,11 @@ class TargetFunction:
 
 
         if race_progress >= race_length:
-            fitness +=100 # maximum reward for finishing the race
+            fitness +=1000 # maximum reward for finishing the race
         else:
             progress_ratio = race_progress / race_length
-            fitness = 100 * progress_ratio * 5  # scaled to be out of 10
+            fitness = 1000 * progress_ratio 
         
-        print("Compound reward", self.agent_compound_reward)
 
 
         #This needs to stay
@@ -29,11 +28,6 @@ class TargetFunction:
         normalized_vel = vel / max_vel
         speed_reward = normalized_vel * 0.1
         total_reward =  speed_reward
-
-
-
-
-
         #This needs to stay
         if agent not in self.agent_compound_reward:
             self.agent_compound_reward[agent.genome_id] = 0
