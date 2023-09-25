@@ -3,20 +3,15 @@ from pygame.locals import *
 from Renderer import Renderer
 from Sprite import Sprite
 from Car import Car
-from Track import Track
 from FinishLine import FinishLine
-from Wall import Wall
-from GameObject import GameObject
 from MapHandler import MapHandler
-from AI_AGENT import AI_AGENT
 from Button import Button
 from SpatialGrid import SpatialGrid
 import CollisionManager
 import SpriteDictionary
-from TemporaryObj import TemporaryObj
-import random
 from Line import Line
 from RaycastManager import RaycastManager
+import time
 class Game:
 
     def __init__(self, neat_core):
@@ -39,13 +34,13 @@ class Game:
         self.line_objects =         []
         self.all_agents =           []
         self.car_ray_angles = [0, 45, -45, 90, -90]
-
+        self.car_max_velocity = 20
         self.TICK_RATE =         30
         self.race_lenght =       -1
         self.render_skip_count = 10
         self.current_skip =       0
         self.game_state =   "NORMAL"
-        self.running =          True
+        self.running =          True 
         self.timer =              0  
         self.num_ai_cars =        20
 
@@ -85,9 +80,8 @@ class Game:
                 self.game_over()
                 self.running = False
 
-            #self.check_stop_condition()
-
-            if self.timer > 30:
+        
+            if self.timer > 30 or self.check_stop_condition() == True:
                 return self.collect_game_data()
 
             car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects, self.car_ray_angles, self.width, self.height)
@@ -108,7 +102,17 @@ class Game:
                     car_specific_distances = car_distances[start_idx:end_idx]
                     car_specific_distances = self.normalize(car_specific_distances)
                     # Set inputs for the agent
-                    inputs = [obj.x, obj.y, obj.angle, obj.vel] + car_specific_distances
+
+                    #car_max_velocity
+                    #height and width
+                    #angle
+                    normalized_x = obj.x / self.width
+                    normalized_y = obj.y / self.height
+                    normalized_angle = obj.angle / 360  # assuming angle is in degrees
+                    normalized_vel = obj.vel / self.car_max_velocity
+
+                    normalized_inputs = [normalized_x, normalized_y, normalized_angle, normalized_vel] + car_specific_distances
+                    inputs = normalized_inputs
                     obj.ai_agent.AI_INPUT(inputs)
                 
                 self.dynamic_gameobjects[x].update()
@@ -135,14 +139,28 @@ class Game:
         return self.collect_game_data()
 
     def check_stop_condition(self):
-        # Check progress and assign rewards
-        total_cars = len(self.AI_AGENTS)  # Assuming you have a list of AI agents
-        cars_that_progressed = sum(1 for progress in self.race_progress for _, value in progress.items() if value > 0)
+        # Track the time since the last movement was detected
+        if not hasattr(self, "last_movement_time"):
+            self.last_movement_time = None
+        
+        current_time = time.time()
 
-        # If less than 10% of cars have increased their race_progress in the last 5 seconds
-        if self.timer >= 5.0 and cars_that_progressed < total_cars * 0.1:
-            print("RESETING DUE TO NO PROGRESS")
-            self.reset_game_state()
+        # If there are no dynamic game objects left
+        if not self.dynamic_gameobjects:
+            return True
+
+        # Check if any car has a velocity not close to zero (i.e., it's moving)
+        for obj in self.dynamic_gameobjects:
+            if isinstance(obj, Car) and abs(obj.vel) > 0.5:
+                self.last_movement_time = current_time
+                return False  # There's at least one car with noticeable movement, so don't stop
+        
+        # If no movement has been detected for a second, trigger the stop condition
+        if self.last_movement_time and current_time - self.last_movement_time > 1.0:
+            return True
+
+        return False
+
 
 
     def normalize(self, array):
@@ -188,7 +206,7 @@ class Game:
     def spawn_ai_cars(self, agents):
         car_sprite = Sprite("assets/car1.png")
         for agent in agents:
-            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, max_vel=20, rotation_vel=5, angle=270, car_explosion_velocity=0.00001, AI_CONTROLLED=True)
+            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=5, angle=270, car_explosion_velocity=0.00001, AI_CONTROLLED=True)
 
             ai_car.set_ai_agent_controller(agent)  # Assign the agent to the car
 
@@ -243,7 +261,7 @@ class Game:
         self.line_objects.clear()
 
         self.race_progress = {}
-        
+        self.last_movement_time = time.time()
         self.race_progress_text.update_text("", self.renderer.width, self.renderer.height)
         self.timer_text.update_text("Timer: 0.000", self.renderer.width, self.renderer.height)
         self.fps_text.update_text("", self.renderer.width, self.renderer.height)

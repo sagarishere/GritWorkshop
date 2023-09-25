@@ -13,3 +13,10 @@ def compute_fitness(game_data):
         return 100.0 * progress_ratio * 5  # scaled to be out of 10
 
     #return 1.0
+
+
+def add_runtime_fitess(agent_data):
+    pass
+    #this function should take agent specific data, speed, position, collision flags, rotations and add to a fitness buffer
+    #this fitness buffer should then be added ontop of the compute_fitness function found here.
+    
