@@ -15,7 +15,7 @@ import time
 import TARGET_FUNCTION
 class Game:
 
-    def __init__(self, neat_core):
+    def __init__(self, neat_core, render_rays):
         self.neat_core = neat_core
         # Setting up the renderer
         self.width = 1536
@@ -26,7 +26,7 @@ class Game:
         self.sprite_dictionary= SpriteDictionary.load_dicionary()
         self.spatial_grid = SpatialGrid(1536, 768, 48) #96x96 256x256 384x384 192x192
         self.raycast_manager = RaycastManager(self.spatial_grid)
-
+        self.render_rays = render_rays
         self.static_gameobjects =   []
         self.dynamic_gameobjects =  []
         self.race_progress =        {} 
@@ -43,9 +43,9 @@ class Game:
         self.game_state =   "NORMAL"
         self.running =          True 
         self.timer =              0  
-        self.num_ai_cars =        20
+        self.num_ai_cars =        25
 
-
+        #agent = AI_AGENT.load_agent("best_genome.pkl", config)
         self.generation = 0
         track_map = MapHandler.map_two()
         self.static_gameobjects.extend(map_handler.generate_track(track_map, 96, sprite_dictionary=self.sprite_dictionary))
@@ -105,9 +105,9 @@ class Game:
                     normalized_x = obj.x / self.width
                     normalized_y = obj.y / self.height
                     normalized_angle = obj.angle / 360  # assuming angle is in degrees
-                   # normalized_vel = obj.vel / self.car_max_velocity
+                    normalized_vel = obj.vel / self.car_max_velocity
 
-                    normalized_inputs = [normalized_x, normalized_y, normalized_angle, obj.vel] + car_specific_distances
+                    normalized_inputs = [normalized_x, normalized_y, normalized_angle, normalized_vel] + car_specific_distances
                     inputs = normalized_inputs
                     obj.ai_agent.AI_INPUT(inputs)
                 
@@ -204,7 +204,7 @@ class Game:
                 last_position = self.last_car_positions.get(obj)
                 if last_position:
                     distance_moved = ((obj.x - last_position[0]) ** 2 + (obj.y - last_position[1]) ** 2) ** 0.5
-                    if distance_moved > 5:
+                    if distance_moved > 20:
                         self.last_movement_time = current_time
                         self.last_car_positions[obj] = (obj.x, obj.y)  # update last known position
                         significant_movement_detected = True
@@ -235,8 +235,11 @@ class Game:
         self.fps_text.update_text(f"FPS: {current_fps:.2f}", self.renderer.width, self.renderer.height)
         self.renderer.RenderAllObjects(self.static_gameobjects + self.dynamic_gameobjects)
         self.renderer.RenderAllTextObjects()
+
+        if self.render_rays:
+         self.renderer.RenderAllLines(self.line_objects)
+
         self.renderer.RenderAllButtons(self.buttons)
-        self.renderer.RenderAllLines(self.line_objects)
 
     def simulate(self):
         self.TICK_RATE = 999999
@@ -264,7 +267,7 @@ class Game:
     def spawn_ai_cars(self, agents):
         car_sprite = Sprite("assets/car1.png")
         for agent in agents:
-            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=5, angle=270, car_explosion_velocity=0.2, AI_CONTROLLED=True)
+            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=6, angle=270, car_explosion_velocity=0.2, AI_CONTROLLED=True)
 
             ai_car.set_ai_agent_controller(agent)  # Assign the agent to the car
 

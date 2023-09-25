@@ -3,6 +3,8 @@ import random
 from Game import Game
 from AI_AGENT import AI_AGENT
 from TARGET_FUNCTION import TargetFunction
+import pickle
+
 
 class NEATCore:
     def __init__(self, config_path):
@@ -23,7 +25,11 @@ class NEATCore:
         self.game_data = []
         self.target_function = TargetFunction()
         
-    
+    def save_best_genome(self, filename="best_genome.pkl"):
+        best_genome = self.stats_reporter.best_genome()
+        with open(filename, "wb") as f:
+            pickle.dump(best_genome, f)
+
     def get_new_genome(self):
         # Get a new genome for a new AI agen
         
@@ -36,7 +42,7 @@ class NEATCore:
             self.population.run(self.evaluate_genomes, 1)  # Run for 1 generation
             # After all agents in this generation have been evaluated, reset the game state
           #  self.game.reset_game_state()
-
+            self.save_best_genome()
             self.game.reset_game_state(self.agents)
 
         self.print_statistics()

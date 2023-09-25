@@ -1,5 +1,5 @@
 import neat.nn
-
+import pickle
 class AI_AGENT:
     def __init__(self, genome, config):
         self.genome = genome
@@ -25,3 +25,9 @@ class AI_AGENT:
         # Adjust outputs to the range [0.5, 1.5]
         adjusted_outputs = [o + 0.5 for o in raw_outputs]
         return adjusted_outputs
+    
+    @staticmethod
+    def load_agent(filename, config):
+        with open(filename, "rb") as f:
+            genome = pickle.load(f)
+        return AI_AGENT(genome, config)

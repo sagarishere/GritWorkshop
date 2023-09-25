@@ -1,23 +1,13 @@
 class TargetFunction:
     def __init__(self):
-        # You can add any initialization code here if required.
-        pass
         self.agent_compound_reward = {}
 
     def compute_fitness(self, game_data, genome_id):
-
         fitness = 0
         race_progress = game_data.get('race_progress', 0)
         race_length = game_data.get('race_length', 1)  # avoid division by zero
 
 
-
-        if race_progress >= race_length:
-            fitness +=1000 # maximum reward for finishing the race
-        else:
-            progress_ratio = race_progress / race_length
-            fitness = 1000 * progress_ratio 
-        
         #This needs to stay
         return fitness + self.agent_compound_reward[genome_id]
 
@@ -32,19 +22,11 @@ class TargetFunction:
         elapsed_time = car_data["elapsed_time"]
         raycast_hits = car_data["raycast_hits"] #This is an array, going from left to right (I think :) )
 
+        reward = 0
 
 
-        normalized_vel = vel / max_vel
-        speed_reward = normalized_vel * 0.05
-
-        if collision_status == 1:  # Wall collision
-            speed_reward -= 1
-        elif collision_status == -1:  # Explosion
-            speed_reward -= 100
-
-        total_reward = speed_reward
 
         # Keep the existing code
         if agent not in self.agent_compound_reward:
             self.agent_compound_reward[agent.genome_id] = 0
-        self.agent_compound_reward[agent.genome_id] += total_reward
+        self.agent_compound_reward[agent.genome_id] += reward
