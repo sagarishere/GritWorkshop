@@ -33,7 +33,7 @@ class TargetFunction:
         collision_status = car_data["collision"]
 
         normalized_vel = vel / max_vel
-        speed_reward = normalized_vel * 0.1
+        speed_reward = normalized_vel * 0.05
 
         if collision_status == 1:  # Wall collision
             speed_reward -= 50
