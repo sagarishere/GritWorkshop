@@ -82,7 +82,7 @@ class Game:
                 self.running = False
 
         
-            if self.timer > 30 or self.check_stop_condition() == True:
+            if self.timer > 90 or self.check_stop_condition() == True:
                 return self.collect_game_data()
 
             car_distances, ray_data = self.raycast_manager.cast_rays_for_cars(self.dynamic_gameobjects, self.car_ray_angles, self.width, self.height)
@@ -105,9 +105,9 @@ class Game:
                     normalized_x = obj.x / self.width
                     normalized_y = obj.y / self.height
                     normalized_angle = obj.angle / 360  # assuming angle is in degrees
-                    normalized_vel = obj.vel / self.car_max_velocity
+                   # normalized_vel = obj.vel / self.car_max_velocity
 
-                    normalized_inputs = [normalized_x, normalized_y, normalized_angle, normalized_vel] + car_specific_distances
+                    normalized_inputs = [normalized_x, normalized_y, normalized_angle, obj.vel] + car_specific_distances
                     inputs = normalized_inputs
                     obj.ai_agent.AI_INPUT(inputs)
                 
@@ -126,6 +126,11 @@ class Game:
                 if isinstance(obj, Car) and hasattr(obj, 'ai_agent'):
                     collision_status = collision_data.get(obj, 0)  # Default to 0 (no collision)
 
+                    start_idx = x * ray_angle_count
+                    end_idx = start_idx + ray_angle_count
+                    
+                    car_specific_distances = car_distances[start_idx:end_idx]
+
                     car_data = {
                         "x": obj.x,
                         "y": obj.y,
@@ -134,7 +139,8 @@ class Game:
                         "max_vel": obj.max_vel,
                         "agent": obj.ai_agent,
                         "collision": collision_status,
-                        "elapsed_time":self.timer
+                        "elapsed_time":self.timer,
+                        "raycast_hits":car_specific_distances
                     }
 
                     target_function.add_runtime_fitness(car_data)
@@ -162,6 +168,10 @@ class Game:
         if not hasattr(self, "last_car_positions"):
             self.last_car_positions = dict()
 
+        # Track the last race progress of each car
+        if not hasattr(self, "last_race_progress"):
+            self.last_race_progress = dict()
+
         current_time = time.time()
 
         # If there are no dynamic game objects left
@@ -169,10 +179,20 @@ class Game:
             return True
 
         significant_movement_detected = False
+        race_progress_detected = False
 
         # Check if any car has a velocity not close to zero or has moved significantly
         for obj in self.dynamic_gameobjects:
             if isinstance(obj, Car):
+                current_race_progress = self.race_progress.get(obj, 0)
+                last_progress = self.last_race_progress.get(obj, 0)
+
+                # Check race progress
+                if current_race_progress > last_progress:
+                    self.last_movement_time = current_time
+                    self.last_race_progress[obj] = current_race_progress
+                    race_progress_detected = True
+
                 # Check velocity
                 if abs(obj.vel) > 0.5:
                     self.last_movement_time = current_time
@@ -191,9 +211,9 @@ class Game:
                         break
                 else:
                     self.last_car_positions[obj] = (obj.x, obj.y)  # initialize if not present
-        
-        # If no significant movement has been detected for a second, trigger the stop condition
-        if not significant_movement_detected and self.last_movement_time and current_time - self.last_movement_time > 1.0:
+
+        # If no significant movement or race progress has been detected for 5 seconds, trigger the stop condition
+        if (not significant_movement_detected and not race_progress_detected) and self.last_movement_time and current_time - self.last_movement_time > 3.0:
             return True
 
         return False

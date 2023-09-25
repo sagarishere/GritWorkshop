@@ -30,6 +30,8 @@ class TargetFunction:
         agent = car_data["agent"]
         collision_status = car_data["collision"]
         elapsed_time = car_data["elapsed_time"]
+        raycast_hits = car_data["raycast_hits"] #This is an array, going from left to right (I think :) )
+
 
 
         normalized_vel = vel / max_vel
