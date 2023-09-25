@@ -23,12 +23,26 @@ class TargetFunction:
         #This needs to stay
         return fitness + self.agent_compound_reward[genome_id]
 
-    def add_runtime_fitness(self, x, y, angle, vel, max_vel, agent):
+    def add_runtime_fitness(self, car_data):
+        x = car_data["x"]
+        y = car_data["y"]
+        angle = car_data["angle"]
+        vel = car_data["vel"]
+        max_vel = car_data["max_vel"]
+        agent = car_data["agent"]
+        collision_status = car_data["collision"]
 
         normalized_vel = vel / max_vel
         speed_reward = normalized_vel * 0.1
-        total_reward =  speed_reward
-        #This needs to stay
+
+        if collision_status == 1:  # Wall collision
+            speed_reward -= 50
+        elif collision_status == -1:  # Explosion
+            speed_reward -= 100
+
+        total_reward = speed_reward
+
+        # Keep the existing code
         if agent not in self.agent_compound_reward:
             self.agent_compound_reward[agent.genome_id] = 0
         self.agent_compound_reward[agent.genome_id] += total_reward

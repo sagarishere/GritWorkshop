@@ -119,16 +119,26 @@ class Game:
 
             self.timer_text.update_text("Timer: " + str(formatted_timer ), self.renderer.width, self.renderer.height)
 
-            if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
-                self.game_over()
-                self.running = False
 
-
+            collision_data = CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght)
             for x in range(len(self.dynamic_gameobjects)):
                 obj = self.dynamic_gameobjects[x]
                 if isinstance(obj, Car) and hasattr(obj, 'ai_agent'):
-                    obj = obj
-                    target_function.add_runtime_fitness(obj.x, obj.y, obj.angle, obj.vel, obj.max_vel, obj.ai_agent)
+                    collision_status = collision_data.get(obj, 0)  # Default to 0 (no collision)
+
+                    car_data = {
+                        "x": obj.x,
+                        "y": obj.y,
+                        "angle": obj.angle,
+                        "vel": obj.vel,
+                        "max_vel": obj.max_vel,
+                        "agent": obj.ai_agent,
+                        "collision": collision_status
+                    }
+
+                    target_function.add_runtime_fitness(car_data)
+
+
 
             if self.game_state == "SIMULATE":
                 self.current_skip += 1
