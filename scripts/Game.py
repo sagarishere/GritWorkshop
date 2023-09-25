@@ -12,6 +12,7 @@ import SpriteDictionary
 from Line import Line
 from RaycastManager import RaycastManager
 import time
+import TARGET_FUNCTION
 class Game:
 
     def __init__(self, neat_core):
@@ -68,7 +69,7 @@ class Game:
 
         print("Init done..")
 
-    def run(self, agents):
+    def run(self, agents, target_function):
         NORMAL_TICKS_PER_SECOND = 30 
         self.reset_game_state(agents)
         while self.running:
@@ -93,8 +94,9 @@ class Game:
             ray_angle_count = len(self.car_ray_angles)
 
             for x in range(len(self.dynamic_gameobjects)):
-                if isinstance(self.dynamic_gameobjects[x], Car) and hasattr(self.dynamic_gameobjects[x], 'ai_agent'):
-                    obj = self.dynamic_gameobjects[x]
+                obj = self.dynamic_gameobjects[x]
+                if isinstance(obj, Car) and hasattr(obj, 'ai_agent'):
+                    obj = obj
                     
                     start_idx = x * ray_angle_count
                     end_idx = start_idx + ray_angle_count
@@ -110,7 +112,8 @@ class Game:
                     inputs = normalized_inputs
                     obj.ai_agent.AI_INPUT(inputs)
                 
-                self.dynamic_gameobjects[x].update()
+                obj.update()
+                
 
             self.cleanup_destroyed_objects()
             formatted_timer  = '%.3f'%(self.timer)
@@ -120,6 +123,13 @@ class Game:
             if CollisionManager.check_collisions(self.dynamic_gameobjects, self.spatial_grid, self.race_progress, self.race_lenght) == False:
                 self.game_over()
                 self.running = False
+
+
+            for x in range(len(self.dynamic_gameobjects)):
+                obj = self.dynamic_gameobjects[x]
+                if isinstance(obj, Car) and hasattr(obj, 'ai_agent'):
+                    obj = obj
+                    target_function.add_runtime_fitness(obj.x, obj.y, obj.angle, obj.vel, obj.max_vel, obj.ai_agent, self.agent_compound_reward)
 
             if self.game_state == "SIMULATE":
                 self.current_skip += 1

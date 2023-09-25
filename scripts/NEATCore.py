@@ -2,7 +2,7 @@ import neat
 import random
 from Game import Game
 from AI_AGENT import AI_AGENT
-import TARGET_FUNCTION 
+from TARGET_FUNCTION import TargetFunction
 
 class NEATCore:
     def __init__(self, config_path):
@@ -21,6 +21,8 @@ class NEATCore:
         self.checkpointer = neat.Checkpointer(5)  # Save every 5 generations, adjust as needed
         self.population.add_reporter(self.checkpointer)
         self.game_data = []
+        self.target_function = TargetFunction()
+        
     
     def get_new_genome(self):
         # Get a new genome for a new AI agen
@@ -57,14 +59,14 @@ class NEATCore:
             agent = AI_AGENT(genome, config)
             self.agents.append(agent)
 
-        game_data = self.game.run(self.agents)
+        game_data = self.game.run(self.agents, self.target_function)
 
 
         for idx, (genome_id, genome) in enumerate(genomes):
           #  print("GENOM ID: ", genome_id)
             agent_specific_data = game_data.get(genome_id)
             if agent_specific_data is not None:  # Ensure data was found for the agent
-                agent_fitness = TARGET_FUNCTION.compute_fitness(agent_specific_data)
+                agent_fitness = self.target_function.compute_fitness(agent_specific_data)
                 genome.fitness = agent_fitness
             else:
                 print(f"Warning: No game data found for genome ID {genome_id}")
