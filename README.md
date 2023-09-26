@@ -24,10 +24,16 @@ If your Python installation didn't come with pip (Python's package installer), [
 
 ### Required Libraries
 
+> fastest way would be
+>
+> ```bash
+>   pip install -r requirements.txt
+> ```
+
 This workshop relies on a couple of Python libraries. You can install them using the following commands:
 
 ```bash
-pip install pygame neat-python
+    pip install pygame neat-python
 ```
 
 ### Running the Workshop Files
