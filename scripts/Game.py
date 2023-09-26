@@ -44,6 +44,11 @@ class Game:
         self.running =          True 
         self.timer =              0  
         self.num_ai_cars =        25
+        self.last_progress_time = 0
+        self.last_movement_time = None
+        self.last_car_positions = dict()
+        self.last_race_progress = dict()
+
 
         #agent = AI_AGENT.load_agent("best_genome.pkl", config)
         self.generation = 0
@@ -160,19 +165,7 @@ class Game:
         return self.collect_game_data()
 
     def check_stop_condition(self):
-        # Track the time since the last movement was detected
-        if not hasattr(self, "last_movement_time"):
-            self.last_movement_time = None
-
-        # Track the last position of each car
-        if not hasattr(self, "last_car_positions"):
-            self.last_car_positions = dict()
-
-        # Track the last race progress of each car
-        if not hasattr(self, "last_race_progress"):
-            self.last_race_progress = dict()
-
-        current_time = time.time()
+        current_time = self.timer
 
         # If there are no dynamic game objects left
         if not self.dynamic_gameobjects:
@@ -189,12 +182,12 @@ class Game:
 
                 # Check race progress
                 if current_race_progress > last_progress:
-                    self.last_movement_time = current_time
                     self.last_race_progress[obj] = current_race_progress
                     race_progress_detected = True
+                    self.last_progress_time = current_time
 
                 # Check velocity
-                if abs(obj.vel) > 0.5:
+                if abs(obj.vel) > 1.0:
                     self.last_movement_time = current_time
                     self.last_car_positions[obj] = (obj.x, obj.y)  # update last known position
                     significant_movement_detected = True
@@ -204,7 +197,7 @@ class Game:
                 last_position = self.last_car_positions.get(obj)
                 if last_position:
                     distance_moved = ((obj.x - last_position[0]) ** 2 + (obj.y - last_position[1]) ** 2) ** 0.5
-                    if distance_moved > 20:
+                    if distance_moved > 10:
                         self.last_movement_time = current_time
                         self.last_car_positions[obj] = (obj.x, obj.y)  # update last known position
                         significant_movement_detected = True
@@ -213,7 +206,10 @@ class Game:
                     self.last_car_positions[obj] = (obj.x, obj.y)  # initialize if not present
 
         # If no significant movement or race progress has been detected for 5 seconds, trigger the stop condition
-        if (not significant_movement_detected and not race_progress_detected) and self.last_movement_time and current_time - self.last_movement_time > 3.0:
+        if current_time - self.last_progress_time > 5.0 and race_progress_detected == False and self.timer > 5.0:
+            return True
+
+        if (significant_movement_detected == False) and self.last_movement_time and current_time - self.last_movement_time > 5.0:
             return True
 
         return False
@@ -267,7 +263,7 @@ class Game:
     def spawn_ai_cars(self, agents):
         car_sprite = Sprite("assets/car1.png")
         for agent in agents:
-            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=6, angle=270, car_explosion_velocity=0.2, AI_CONTROLLED=True)
+            ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=6, angle=270, car_explosion_velocity=0.25, AI_CONTROLLED=True)
 
             ai_car.set_ai_agent_controller(agent)  # Assign the agent to the car
 
