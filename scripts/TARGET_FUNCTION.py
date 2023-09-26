@@ -27,8 +27,8 @@ class TargetFunction:
         raycast_hits = car_data["raycast_hits"] #This is an array, going from left to right (I think :) )
 
         reward = 0
-        x = 0
-      
+        x = 0 # make x = velocity and put a limit to the collision status with the wall, i.e, put this inside the if statement
+              
         reward += x
 
         # Keep the existing code
