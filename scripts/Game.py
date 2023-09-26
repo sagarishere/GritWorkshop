@@ -43,7 +43,7 @@ class Game:
         self.game_state =   "NORMAL"
         self.running =          True 
         self.timer =              0  
-        self.num_ai_cars =        25
+        self.num_ai_cars =        20
         self.last_progress_time = 0
         self.last_movement_time = None
         self.last_car_positions = dict()
@@ -261,7 +261,7 @@ class Game:
             self.objects_to_remove.append(game_object)
 
     def spawn_ai_cars(self, agents):
-        car_sprite = Sprite("assets/car1.png")
+        car_sprite = Sprite("assets/TopDownCityTextures/Vehicle/redTruck.png")
         for agent in agents:
             ai_car = Car(self.finish_line.x + 48, self.finish_line.y + 48, car_sprite, self.car_max_velocity, rotation_vel=6, angle=270, car_explosion_velocity=0.25, AI_CONTROLLED=True)
 
@@ -273,7 +273,7 @@ class Game:
             self.race_progress[ai_car] = 0
 
             for _ in range(len(self.car_ray_angles)):
-                self.line_objects.append(Line(start=(0, 0), end=(300, 300), width=1))
+                self.line_objects.append(Line(start=(0, 0), end=(300, 300), width=1, color=(0,125,255)))
 
 
     def get_finish_line(self):
